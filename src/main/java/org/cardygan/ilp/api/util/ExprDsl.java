@@ -1,6 +1,5 @@
 package org.cardygan.ilp.api.util;
 
-import org.cardygan.ilp.api.IntVar;
 import org.cardygan.ilp.api.expr.*;
 import org.cardygan.ilp.api.expr.bool.*;
 
@@ -54,6 +53,10 @@ public final class ExprDsl {
 
     public static Geq geq(ArithExpr lhs, ArithExpr rhs) {
         return new Geq(lhs, rhs);
+    }
+
+    public static Or or(List<BoolExpr> e) {
+        return new Or(e);
     }
 
     public static Or or(BoolExpr e1, BoolExpr... es) {

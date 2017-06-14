@@ -2,12 +2,18 @@ package org.cardygan.ilp.api;
 
 import org.cardygan.ilp.api.expr.ArithExpr;
 import org.cardygan.ilp.api.expr.Neg;
+import org.cardygan.ilp.api.expr.Var;
 import org.cardygan.ilp.api.expr.bool.*;
+import org.cardygan.ilp.internal.Coefficient;
 import org.cardygan.ilp.internal.Pair;
-import org.cardygan.ilp.internal.expr.*;
+import org.cardygan.ilp.internal.expr.BoolExprVisitor;
+import org.cardygan.ilp.internal.expr.BoolLiteralToConstraintProcessor;
+import org.cardygan.ilp.internal.expr.NormalizedArithExpr;
+import org.cardygan.ilp.internal.expr.NormalizedArithExprCreator;
 import org.cardygan.ilp.internal.expr.cnf.CnfClause;
 import org.cardygan.ilp.internal.expr.cnf.TseytinTransformer;
 import org.cardygan.ilp.internal.util.RandomString;
+import org.cardygan.ilp.internal.util.Util;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,19 +22,20 @@ import static org.cardygan.ilp.api.util.ExprDsl.*;
 
 public class Model {
 
-    private List<Constraint> constraints = new ArrayList<>();
+    private Map<Constraint, Boolean> constraints = new HashMap<>();
     private Objective objective;
 
     private List<NormalizedArithExpr> normalizedArithConstraints = new ArrayList<>();
-    private Optional<Integer> m;
+    private Optional<Integer> m = Optional.empty();
 
     private int counter = 0;
     private String VARIABLE_PREFIX = "v";
 
-    private Map<String, org.cardygan.ilp.api.expr.Var> vars = new HashMap<>();
+    private Map<String, Var> vars = new HashMap<>();
+    private List<Set<Var>> sos1 = new ArrayList<>();
 
 
-    public List<org.cardygan.ilp.api.expr.Var> getVars() {
+    public List<Var> getVars() {
         return Collections.unmodifiableList(new ArrayList<>(vars.values()));
     }
 
@@ -36,6 +43,9 @@ public class Model {
         return objective;
     }
 
+    public List<Set<Var>> getSos1() {
+        return Collections.unmodifiableList(sos1);
+    }
 
     public List<NormalizedArithExpr> getConstraints() {
         return Collections.unmodifiableList(normalizedArithConstraints);
@@ -50,7 +60,7 @@ public class Model {
 
     public Constraint newConstraint(String name) {
         Constraint cstr = new Constraint(name);
-        constraints.add(cstr);
+        constraints.put(cstr, false);
         return cstr;
     }
 
@@ -80,6 +90,15 @@ public class Model {
         }
 
         return newIntVar(VARIABLE_PREFIX + counter);
+    }
+
+    public void addSos1(Set<Var> vars) {
+        sos1.add(vars);
+        List<Coefficient> coefficients = new ArrayList<>();
+        for (Var var : vars) {
+            coefficients.add(Util.coef(1, var));
+        }
+        newConstraint("sos").setExpr(Util.geq(coefficients, 1));
     }
 
 
@@ -123,28 +142,26 @@ public class Model {
 
     private void preProcessConstraints() {
         // preprocess constraints
-        for (Constraint cstr : constraints) {
-            if (cstr.getExpr() instanceof RelOp) {
-                normalizedArithConstraints.add(preProcessArithExpr(cstr.getName(), (RelOp) cstr.getExpr()));
-            } else if (cstr.getExpr() instanceof BoolExpr) {
-                preProcessBoolExpr(cstr.getExpr());
-            } else {
-                throw new IllegalStateException("Unknown expression type.");
-            }
+        while (constraints.keySet().stream().anyMatch(c -> !constraints.get(c))) {
+            List<Constraint> tmpCstrs = new ArrayList<>(constraints.keySet().stream()
+                    .filter(c -> !constraints.get(c))
+                    .collect(Collectors.toList()));
 
+            for (Constraint cstr : tmpCstrs) {
+                constraints.put(cstr, true);
+                if (cstr.getExpr() instanceof RelOp) {
+                    normalizedArithConstraints.add(preProcessArithExpr(cstr.getName(), (RelOp) cstr.getExpr()));
+                } else if (cstr.getExpr() instanceof BoolExpr) {
+                    preProcessBoolExpr(cstr.getExpr());
+                } else {
+                    throw new IllegalStateException("Unknown expression type.");
+                }
+            }
         }
     }
 
     private NormalizedArithExpr preProcessArithExpr(String name, RelOp expr) {
-        if (expr instanceof Leq) {
-            return new LeqNormalizedArithExpr(name, expr);
-        } else if (expr instanceof Geq) {
-            return new GeqNormalizedArithExpr(name, expr);
-        } else if (expr instanceof Eq) {
-            return new EqNormalizedArithExpr(name, expr);
-        } else {
-            throw new IllegalStateException("Unknown RelOp type.");
-        }
+        return NormalizedArithExprCreator.createArithExpr(name, expr);
     }
 
     private void preProcessBoolExpr(BoolExpr expr) {
@@ -247,16 +264,13 @@ public class Model {
         });
     }
 
-    public int getM(RelOp expr) {
+    public Optional<Integer> getM(RelOp expr) {
         //TODO implement relOp specific BigM retrieval
         return getM();
     }
 
-    public int getM() {
-        if (!m.isPresent()) {
-            throw new IllegalStateException("Big M was not set.");
-        }
-        return m.get();
+    public Optional<Integer> getM() {
+        return m;
     }
 
     public void setM(int m) {

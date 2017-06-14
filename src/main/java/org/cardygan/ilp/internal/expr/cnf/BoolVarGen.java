@@ -15,7 +15,8 @@ public class BoolVarGen {
     }
 
     public BinaryVar newVar() {
-        return model.newBinaryVar(prefix + counter++);
+        counter++;
+        return model.newBinaryVar();
     }
 
     public boolean isFirst() {

@@ -3,6 +3,7 @@ package org.cardygan.ilp.api;
 import ilog.concert.IloException;
 import ilog.concert.IloIntVar;
 import ilog.concert.IloNumExpr;
+import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import org.cardygan.ilp.api.expr.Var;
 import org.cardygan.ilp.internal.Coefficient;
@@ -13,11 +14,8 @@ import org.cardygan.ilp.internal.expr.NormalizedArithExpr;
 import org.cardygan.ilp.internal.util.IlpUtil;
 import org.cardygan.ilp.internal.util.SolverUtil;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
 
 public class CplexSolver implements Solver {
 
@@ -36,13 +34,15 @@ public class CplexSolver implements Solver {
 
             cplex = new IloCplex();
 
-            cplex.setOut(null);
+//            cplex.setOut(null);
+            cplex.setOut(System.out);
 
             for (Var var : model.getVars()) {
                 if (IlpUtil.isBinaryVar(var)) {
                     vars.put(var, cplex.boolVar(var.getName()));
                 } else if (IlpUtil.isIntVar(var)) {
                     vars.put(var, cplex.intVar(0, Integer.MAX_VALUE, var.getName()));
+//                    vars.put(var, cplex.intVar(0, Integer.MAX_VALUE, var.getName()));
                 } else {
                     throw new IllegalStateException("Not supported variable type.");
                 }
@@ -51,6 +51,8 @@ public class CplexSolver implements Solver {
             // Create constraints
             constructConstraints(cplex, model.getConstraints());
 
+            // create sos1 constraints
+            constructSos1Constraints(cplex, model.getSos1());
 
             if (model.getObjective().isMax()) {
                 cplex.addMaximize(createObjectiveTerms(cplex, model.getObjective()));
@@ -62,11 +64,11 @@ public class CplexSolver implements Solver {
             boolean succ = cplex.solve();
             final long end = System.currentTimeMillis();
 
-
             cplex.exportModel("/Users/markus/Desktop/testOutput/model" + ".lp");
             solutions = new HashMap<>();
             if (succ) {
                 for (Entry<Var, IloIntVar> entry : vars.entrySet()) {
+//                    System.out.println("Does var exist? "+entry.getKey().getName());
                     SolverUtil.assertIsInteger(cplex.getValue(entry.getValue()));
                     solutions.put(entry.getKey(), (double) Math.round(cplex.getValue(entry.getValue())));
                 }
@@ -107,6 +109,18 @@ public class CplexSolver implements Solver {
             i++;
         }
         return model.sum(exprs);
+    }
+
+    private void constructSos1Constraints(IloCplex model, List<Set<Var>> sets) throws IloException {
+        double d = 1;
+        for (Set<Var> sos : sets) {
+            double[] weights = new double[sos.size()];
+            for (int i = 0; i < sos.size(); i++) {
+                weights[i] = i + 1;
+            }
+            IloNumVar[] sosVars = sos.stream().map(v -> vars.get(v)).toArray(IloNumVar[]::new);
+            model.addSOS1(sosVars, weights);
+        }
     }
 
     private void constructConstraints(IloCplex model, List<NormalizedArithExpr> ilpNormalizedArithExprs) throws IloException {
