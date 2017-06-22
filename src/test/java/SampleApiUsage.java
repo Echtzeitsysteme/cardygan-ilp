@@ -25,7 +25,7 @@ public class SampleApiUsage {
         Objective obj = model.newObjective(false);
         obj.setExpr(sum(v1));
 
-        Result res = model.solve(new CplexSolver("/Users/markus/Applications/IBM/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_osx/"));
+        Result res = model.solve(new CplexSolver());
 
     }
 
@@ -41,7 +41,7 @@ public class SampleApiUsage {
         Objective obj = model.newObjective(false);
         obj.setExpr(v1);
 
-        Result res = model.solve(new CplexSolver("/Users/markus/Applications/IBM/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_osx/"));
+        Result res = model.solve(new CplexSolver());
 
     }
 }

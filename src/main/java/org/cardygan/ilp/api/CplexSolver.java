@@ -20,10 +20,23 @@ import java.util.Map.Entry;
 
 public class CplexSolver implements Solver {
 
+    private final static String ENV_VAR_CPLEX_LIB_PATH = "CPLEX_LIB_PATH";
     private final Optional<String> modelOutputFilePath;
     private final boolean logging;
     private Map<Var, IloIntVar> vars;
     private Map<Var, Double> solutions;
+
+    public CplexSolver() {
+        String cplexLibraryPath = System.getenv(ENV_VAR_CPLEX_LIB_PATH);
+        if (cplexLibraryPath == null) {
+            throw new IllegalStateException("Could not read Cplex library path. Environment variable " + ENV_VAR_CPLEX_LIB_PATH + " not set.");
+        }
+        loadLibraryFromPath(cplexLibraryPath);
+
+        modelOutputFilePath = Optional.empty();
+        logging = false;
+
+    }
 
     public CplexSolver(String cplexLibraryPath) {
         this(cplexLibraryPath, false, Optional.empty());
@@ -37,6 +50,11 @@ public class CplexSolver implements Solver {
         this.logging = logging;
         this.modelOutputFilePath = modelOutputFilePath;
 
+        loadLibraryFromPath(cplexLibraryPath);
+
+    }
+
+    private void loadLibraryFromPath(String cplexLibraryPath) {
         try {
             System.setProperty("java.library.path", cplexLibraryPath);
             Field fieldSysPath = ClassLoader.class.getDeclaredField("sys_paths");
@@ -46,7 +64,6 @@ public class CplexSolver implements Solver {
             System.err.println("Could not load cplex library from path " + cplexLibraryPath);
             e.printStackTrace();
         }
-
     }
 
     @Override

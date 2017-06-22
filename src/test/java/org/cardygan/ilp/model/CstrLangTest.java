@@ -4,8 +4,6 @@ import org.cardygan.ilp.api.*;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Optional;
-
 import static org.cardygan.ilp.api.util.ExprDsl.*;
 import static org.junit.Assert.*;
 
@@ -18,7 +16,7 @@ public class CstrLangTest {
 
     @Before
     public void init() {
-        solver = new CplexSolver("/Users/markus/Applications/IBM/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_osx/", true, Optional.of("/Users/markus/Desktop/testOutput/model.lp"));
+        solver = new CplexSolver();
     }
 
     @Test
