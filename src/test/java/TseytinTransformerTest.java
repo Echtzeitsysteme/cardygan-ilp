@@ -1,12 +1,12 @@
 import org.cardygan.ilp.api.BinaryVar;
 import org.cardygan.ilp.api.Model;
+import org.cardygan.ilp.api.ModelContext;
 import org.cardygan.ilp.api.expr.bool.BoolExpr;
 import org.cardygan.ilp.internal.expr.cnf.CnfClause;
 import org.cardygan.ilp.internal.expr.cnf.TseytinTransformer;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +21,7 @@ import static org.junit.Assert.assertThat;
 public class TseytinTransformerTest {
 
 
-    private static Model model;
+    private static ModelContext model;
     private static Map<String, BinaryVar> binVarCache;
 
     private static BinaryVar v(String name) {
@@ -34,7 +34,7 @@ public class TseytinTransformerTest {
     @Before
     public void setup() {
         binVarCache = new HashMap<>();
-        model = new Model();
+        model = new ModelContext(new Model());
     }
 
     @Test

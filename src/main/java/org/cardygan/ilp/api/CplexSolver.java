@@ -14,42 +14,69 @@ import org.cardygan.ilp.internal.expr.NormalizedArithExpr;
 import org.cardygan.ilp.internal.util.IlpUtil;
 import org.cardygan.ilp.internal.util.SolverUtil;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.Map.Entry;
 
 public class CplexSolver implements Solver {
 
-    private Model model;
+    private final Optional<String> modelOutputFilePath;
+    private final boolean logging;
     private Map<Var, IloIntVar> vars;
     private Map<Var, Double> solutions;
 
+    public CplexSolver(String cplexLibraryPath) {
+        this(cplexLibraryPath, false, Optional.empty());
+    }
+
+    public CplexSolver(String cplexLibraryPath, boolean logging) {
+        this(cplexLibraryPath, logging, Optional.empty());
+    }
+
+    public CplexSolver(String cplexLibraryPath, boolean logging, Optional<String> modelOutputFilePath) {
+        this.logging = logging;
+        this.modelOutputFilePath = modelOutputFilePath;
+
+        try {
+            System.setProperty("java.library.path", cplexLibraryPath);
+            Field fieldSysPath = ClassLoader.class.getDeclaredField("sys_paths");
+            fieldSysPath.setAccessible(true);
+            fieldSysPath.set(null, null);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            System.err.println("Could not load cplex library from path " + cplexLibraryPath);
+            e.printStackTrace();
+        }
+
+    }
 
     @Override
-    public Result solveProblem(Model model) {
+    public Result solve(ModelContext model) {
         vars = new HashMap<>();
-        this.model = model;
 
         IloCplex cplex;
         try {
 
             cplex = new IloCplex();
 
-//            cplex.setOut(null);
-            cplex.setOut(System.out);
+            if (logging) {
+                cplex.setOut(System.out);
+            } else {
+                cplex.setOut(null);
+            }
 
+            // Create vars
             for (Var var : model.getVars()) {
                 if (IlpUtil.isBinaryVar(var)) {
                     vars.put(var, cplex.boolVar(var.getName()));
                 } else if (IlpUtil.isIntVar(var)) {
                     vars.put(var, cplex.intVar(0, Integer.MAX_VALUE, var.getName()));
-//                    vars.put(var, cplex.intVar(0, Integer.MAX_VALUE, var.getName()));
                 } else {
                     throw new IllegalStateException("Not supported variable type.");
                 }
             }
 
             // Create constraints
-            constructConstraints(cplex, model.getConstraints());
+            constructConstraints(cplex, model.getNormalizedConstraints());
 
             // create sos1 constraints
             constructSos1Constraints(cplex, model.getSos1());
@@ -60,15 +87,20 @@ public class CplexSolver implements Solver {
                 cplex.addMinimize(createObjectiveTerms(cplex, model.getObjective()));
             }
 
+            // deactivate presolve to prevent "UnounbdedOrInfeasible" status
+            cplex.setParam(IloCplex.BooleanParam.PreInd, false);
+
             final long start = System.currentTimeMillis();
             boolean succ = cplex.solve();
             final long end = System.currentTimeMillis();
 
-            cplex.exportModel("/Users/markus/Desktop/testOutput/model" + ".lp");
+            if (modelOutputFilePath.isPresent()) {
+                cplex.exportModel(modelOutputFilePath.get());
+            }
+
             solutions = new HashMap<>();
             if (succ) {
                 for (Entry<Var, IloIntVar> entry : vars.entrySet()) {
-//                    System.out.println("Does var exist? "+entry.getKey().getName());
                     SolverUtil.assertIsInteger(cplex.getValue(entry.getValue()));
                     solutions.put(entry.getKey(), (double) Math.round(cplex.getValue(entry.getValue())));
                 }
@@ -81,6 +113,7 @@ public class CplexSolver implements Solver {
             } else {
                 objVal = Optional.empty();
             }
+
             final Result res = new Result(new Result.Statistics(succ, cplex.getStatus() == IloCplex.Status.Unbounded, end - start),
                     solutions, objVal);
 
@@ -91,11 +124,6 @@ public class CplexSolver implements Solver {
             e.printStackTrace();
         }
         throw new RuntimeException("Error in solver Run ");
-    }
-
-    @Override
-    public double getVal(Var var) {
-        return solutions.get(var);
     }
 
     private IloNumExpr createObjectiveTerms(IloCplex model, Objective obj) throws IloException {
@@ -142,7 +170,7 @@ public class CplexSolver implements Solver {
             } else if (ilpNormalizedArithExpr instanceof EqNormalizedArithExpr) {
                 model.addEq(model.sum(exprs), right, ilpNormalizedArithExpr.getName());
             } else {
-                throw new IllegalStateException("Unknown expr type.");
+                throw new IllegalStateException("Unknown expression type.");
             }
         }
 

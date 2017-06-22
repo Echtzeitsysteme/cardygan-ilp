@@ -3,7 +3,7 @@ package org.cardygan.ilp.internal.expr;
 
 import org.cardygan.ilp.api.BinaryVar;
 import org.cardygan.ilp.api.IntVar;
-import org.cardygan.ilp.api.Model;
+import org.cardygan.ilp.api.ModelContext;
 import org.cardygan.ilp.api.expr.Var;
 import org.cardygan.ilp.api.expr.bool.Geq;
 import org.cardygan.ilp.api.expr.bool.Leq;
@@ -19,10 +19,10 @@ import static org.cardygan.ilp.api.util.ExprDsl.*;
 
 public class BoolLiteralToConstraintProcessor {
 
-    private final Model ilpModel;
+    private final ModelContext ilpModel;
     private final Set<RelOp> processed;
 
-    public BoolLiteralToConstraintProcessor(Model ilpModel) {
+    public BoolLiteralToConstraintProcessor(ModelContext ilpModel) {
         this.ilpModel = ilpModel;
         this.processed = new HashSet<>();
     }
@@ -77,9 +77,9 @@ public class BoolLiteralToConstraintProcessor {
         List<Coefficient> lhs = createCoefficients(exprSimplifier.getSummands());
         lhs = negateBothSides ? Util.neg(lhs) : lhs;
 
-
         // move constants to rhs or add: -(lhs_const - rhs_const)
         double rhs = negateBothSides ? exprSimplifier.getConstant() : -exprSimplifier.getConstant();
+
 
         Util.assertTrue(rhs >= 0);
 
@@ -88,58 +88,33 @@ public class BoolLiteralToConstraintProcessor {
         BinaryVar r_l = ilpModel.newBinaryVar();
 
         // r_l + r_k = 1
-        ilpModel.newConstraint("leq_" + r_k.getName()).setExpr(Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
+        ilpModel.newTmpConstraint("eq_" + r_k.getName()).setExpr(Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
 
-        if (rhs == 0) {
-            // f_i - ... + f_n <= s1
-            // f_i - ... + f_n - s1 <= 0
-            IntVar s1 = ilpModel.newIntVar();
-            List<Coefficient> summands = new ArrayList<>();
-            summands.addAll(lhs);
-            summands.add(Util.coef(-1, s1));
+        IntVar s = ilpModel.newIntVar();
+        List<Coefficient> summands = new ArrayList<>();
+        summands.add(Util.coef(-1, s));
+        summands.addAll(lhs);
 
-            Set<Var> sos1 = new HashSet<>();
-            sos1.add(r_k);
-            sos1.add(s1);
-            ilpModel.addSos1(sos1);
+        Set<Var> sos = new HashSet<>();
+        sos.add(s);
+        sos.add(r_k);
+        ilpModel.addSos1(sos);
+        ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos), 1));
 
-            ilpModel.newConstraint("leq_" + r_k.getName()).setExpr(Util.leq(summands, 0));
+        ilpModel.newTmpConstraint("leq1_" + r_k.getName()).setExpr(Util.leq(summands, rhs));
 
-            // f_i - ... + f_n >= -s2 + r_l
-            // f_i - ... + f_n + s2 - r_l >= 0
-            IntVar s2 = ilpModel.newIntVar();
-            summands = new ArrayList<>();
-            summands.addAll(lhs);
-            summands.add(Util.coef(1, s2));
-            summands.add(Util.coef(-1, r_l));
+        IntVar s_2 = ilpModel.newIntVar();
+        summands = new ArrayList<>();
+        summands.add(Util.coef(1, s_2));
+        summands.addAll(lhs);
 
-            Set<Var> sos2 = new HashSet<>();
-            sos2.add(r_l);
-            sos2.add(s2);
-            ilpModel.addSos1(sos2);
+        Set<Var> sos2 = new HashSet<>();
+        sos2.add(s_2);
+        sos2.add(r_l);
+        ilpModel.addSos1(sos2);
+        ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos2), 1));
 
-            ilpModel.newConstraint("leq_" + r_k.getName()).setExpr(Util.geq(summands, 0));
-
-        } else {
-            // f_i + ... + f_n >= (rhs + 1) * r_l
-            List<Coefficient> summands = new ArrayList<>();
-            summands.add(Util.coef(-(rhs + 1), r_l));
-            summands.addAll(lhs);
-
-            ilpModel.newConstraint("leq_" + r_k.getName()).setExpr(Util.geq(summands, 0));
-
-            // f_i + ... + f_n <= rhs + s
-            // f_i + ... + f_n - s <= rhs
-            IntVar s = ilpModel.newIntVar();
-            lhs.add(Util.coef(-1, s));
-
-            Set<Var> sos = new HashSet<>();
-            sos.add(r_k);
-            sos.add(s);
-            ilpModel.addSos1(sos);
-
-            ilpModel.newConstraint("leq_" + r_k.getName()).setExpr(Util.leq(lhs, rhs));
-        }
+        ilpModel.newTmpConstraint("leq2_" + r_k.getName()).setExpr(Util.geq(summands, rhs + 1));
 
 
     }
@@ -160,85 +135,42 @@ public class BoolLiteralToConstraintProcessor {
         BinaryVar r_l = ilpModel.newBinaryVar();
 
         // r_l + r_k = 1
-        ilpModel.newConstraint("eq_" + r_k.getName()).setExpr(Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
+        ilpModel.newTmpConstraint("eq_" + r_k.getName()).setExpr(Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
 
-        if (rhs == 0) {
-            // s_1 + f_1 - f_i + ... + f_n >= 0
-            IntVar s_1 = ilpModel.newIntVar();
-            List<Coefficient> summands = new ArrayList<>();
-            summands.add(Util.coef(1, s_1));
-            summands.addAll(lhs);
+        IntVar s = ilpModel.newIntVar();
+        List<Coefficient> summands = new ArrayList<>();
+        summands.add(Util.coef(1, s));
+        summands.addAll(lhs);
 
-            ilpModel.newConstraint("geq_" + r_k.getName()).setExpr(Util.geq(summands, 0));
+        Set<Var> sos = new HashSet<>();
+        sos.add(s);
+        sos.add(r_k);
+        ilpModel.addSos1(sos);
+        ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos), 1));
 
-            // sos1 {s_1, r_k}
-            Set<Var> sos = new HashSet<>();
-            sos.add(s_1);
-            sos.add(r_k);
-            ilpModel.addSos1(sos);
+        ilpModel.newTmpConstraint("geq1_" + r_k.getName()).setExpr(Util.geq(summands, rhs));
 
+        IntVar s_2 = ilpModel.newIntVar();
+        summands = new ArrayList<>();
+        summands.add(Util.coef(-1, s_2));
+        summands.addAll(lhs);
 
+        Set<Var> sos2 = new HashSet<>();
+        sos2.add(s_2);
+        sos2.add(r_l);
+        ilpModel.addSos1(sos2);
+        ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos2), 1));
 
-            // f_1 - f_i + ... + f_n <= s_2 - r_l
-            // f_1 - f_i + ... + f_n - s_2 + r_l <= 0
-            IntVar s_2 = ilpModel.newIntVar();
-            summands = new ArrayList<>();
-            summands.addAll(lhs);
-            summands.add(Util.coef(-1, s_2));
-            summands.add(Util.coef(1, r_l));
+        ilpModel.newTmpConstraint("geq2_" + r_k.getName()).setExpr(Util.leq(summands, rhs - 1));
 
-            // sos1 {s_2, r_l}
-            sos = new HashSet<>();
-            sos.add(s_2);
-            sos.add(r_l);
-            ilpModel.addSos1(sos);
+    }
 
-
-            ilpModel.newConstraint("geq_" + r_k.getName()).setExpr(Util.leq(summands, 0));
-
-        } else {
-            if (rhs == 1) {
-                // 1 - r_l + s >= f_i + ... + f_n
-                IntVar s = ilpModel.newIntVar();
-
-                List<Coefficient> summands = new ArrayList<>();
-                summands.add(Util.coef(-1, r_l));
-                summands.add(Util.coef(1, s));
-                summands.addAll(Util.neg(lhs));
-
-                // sos1 {s, r_l}
-                Set<Var> sos = new HashSet<>();
-                sos.add(r_l);
-                sos.add(s);
-                ilpModel.addSos1(sos);
-
-                ilpModel.newConstraint("geq_" + r_k.getName()).setExpr(Util.geq(summands, -1));
-            } else {
-                // (rhs-1) * r_l + s >= f_i + ... + f_n
-                IntVar s = ilpModel.newIntVar();
-
-                List<Coefficient> summands = new ArrayList<>();
-                summands.add(Util.coef(rhs - 1, r_l));
-                summands.add(Util.coef(1, s));
-                summands.addAll(Util.neg(lhs));
-
-                ilpModel.newConstraint("geq_" + r_k.getName()).setExpr(Util.geq(summands, 0));
-
-                // sos1 {s, r_l}
-                Set<Var> sos = new HashSet<>();
-                sos.add(r_l);
-                sos.add(s);
-                ilpModel.addSos1(sos);
-
-            }
-
-
-            // f_i + ... + f_n >= rhs * r_k
-            lhs.add(Util.coef(-rhs, r_k));
-
-            ilpModel.newConstraint("geq_" + r_k.getName()).setExpr(Util.geq(lhs, 0));
+    private List<Coefficient> createSosCoeff(Set<Var> sos) {
+        List<Coefficient> coefficients = new ArrayList<>();
+        for (Var var : sos) {
+            coefficients.add(Util.coef(1, var));
         }
-
+        return coefficients;
     }
 
     private void addGeqCstrWithM(BinaryVar var, RelOp expr, ArithExprSimplifier exprSimplifier, boolean negateBothSides) {
@@ -263,7 +195,7 @@ public class BoolLiteralToConstraintProcessor {
             summands.add(Util.coef(-ilpModel.getM(expr).get(), r_k));
             summands.addAll(lhs);
 
-            ilpModel.newConstraint("geq_" + r_k.getName()).setExpr(Util.geq(summands, -ilpModel.getM(expr).get()));
+            ilpModel.newTmpConstraint("geq_" + r_k.getName()).setExpr(Util.geq(summands, -ilpModel.getM(expr).get()));
 
             // f_1 - f_i + ... + f_n <= M * r_k - r_l
             // f_1 - f_i + ... + f_n - M r_k + r_l <= 0
@@ -272,7 +204,7 @@ public class BoolLiteralToConstraintProcessor {
             summands.add(Util.coef(-ilpModel.getM(expr).get(), r_k));
             summands.add(Util.coef(1, r_l));
 
-            ilpModel.newConstraint("geq_" + r_k.getName()).setExpr(Util.leq(summands, 0));
+            ilpModel.newTmpConstraint("geq_" + r_k.getName()).setExpr(Util.leq(summands, 0));
 
         } else {
             if (rhs == 1) {
@@ -282,7 +214,7 @@ public class BoolLiteralToConstraintProcessor {
                 summands.add(Util.coef(ilpModel.getM(expr).get(), r_k));
                 summands.addAll(Util.neg(lhs));
 
-                ilpModel.newConstraint("geq_" + r_k.getName()).setExpr(Util.geq(summands, -1));
+                ilpModel.newTmpConstraint("geq_" + r_k.getName()).setExpr(Util.geq(summands, -1));
             } else {
                 // (rhs-1) * r_l + M * r_k >= f_i + ... + f_n
                 List<Coefficient> summands = new ArrayList<>();
@@ -290,18 +222,18 @@ public class BoolLiteralToConstraintProcessor {
                 summands.add(Util.coef(ilpModel.getM(expr).get(), r_k));
                 summands.addAll(Util.neg(lhs));
 
-                ilpModel.newConstraint("geq_" + r_k.getName()).setExpr(Util.geq(summands, 0));
+                ilpModel.newTmpConstraint("geq_" + r_k.getName()).setExpr(Util.geq(summands, 0));
             }
 
 
             // a >= b
             lhs.add(Util.coef(-rhs, r_k));
 
-            ilpModel.newConstraint("geq_" + r_k.getName()).setExpr(Util.geq(lhs, 0));
+            ilpModel.newTmpConstraint("geq_" + r_k.getName()).setExpr(Util.geq(lhs, 0));
         }
 
         // r_l + r_k = 1
-        ilpModel.newConstraint("eq_" + r_k.getName()).setExpr(Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
+        ilpModel.newTmpConstraint("eq_" + r_k.getName()).setExpr(Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
     }
 
     private void addLeqCstrWithM(BinaryVar var, RelOp expr, ArithExprSimplifier exprSimplifier, boolean negateBothSides) {
@@ -327,7 +259,7 @@ public class BoolLiteralToConstraintProcessor {
             summands.addAll(lhs);
             summands.add(Util.coef(ilpModel.getM(expr).get(), r_k));
 
-            ilpModel.newConstraint("leq_" + r_k.getName()).setExpr(Util.leq(summands, ilpModel.getM(expr).get()));
+            ilpModel.newTmpConstraint("leq_" + r_k.getName()).setExpr(Util.leq(summands, ilpModel.getM(expr).get()));
 
             // f_i - ... + f_n >= - M * r_k + r_l
             // f_i - ... + f_n + M * r_k - r_l >= 0
@@ -336,7 +268,7 @@ public class BoolLiteralToConstraintProcessor {
             summands.add(Util.coef(ilpModel.getM(expr).get(), r_k));
             summands.add(Util.coef(-1, r_l));
 
-            ilpModel.newConstraint("leq_" + r_k.getName()).setExpr(Util.geq(summands, 0));
+            ilpModel.newTmpConstraint("leq_" + r_k.getName()).setExpr(Util.geq(summands, 0));
 
         } else {
             // f_i + ... + f_n >= (rhs + 1) * r_l
@@ -344,7 +276,7 @@ public class BoolLiteralToConstraintProcessor {
             summands.add(Util.coef(-(rhs + 1), r_l));
             summands.addAll(lhs);
 
-            ilpModel.newConstraint("leq_" + r_k.getName()).setExpr(Util.geq(summands, 0));
+            ilpModel.newTmpConstraint("leq_" + r_k.getName()).setExpr(Util.geq(summands, 0));
 
             // a <= b
             // f_i + ... + f_n <= rhs + M (1-r_k)
@@ -353,11 +285,11 @@ public class BoolLiteralToConstraintProcessor {
             lhs.add(Util.coef(ilpModel.getM(expr).get(), r_k));
 
             rhs = rhs + ilpModel.getM(expr).get();
-            ilpModel.newConstraint("leq_" + r_k.getName()).setExpr(Util.leq(lhs, rhs));
+            ilpModel.newTmpConstraint("leq_" + r_k.getName()).setExpr(Util.leq(lhs, rhs));
         }
 
         // r_l + r_k = 1
-        ilpModel.newConstraint("leq_" + r_k.getName()).setExpr(Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
+        ilpModel.newTmpConstraint("leq_" + r_k.getName()).setExpr(Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
     }
 
 

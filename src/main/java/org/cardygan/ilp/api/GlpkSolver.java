@@ -20,12 +20,12 @@ public class GlpkSolver implements Solver {
 
     private static final String LOG_FILE = "log-" + System.currentTimeMillis() + ".log";
     private static final String LOG_PATH = "." + File.separator + "log" + File.separator + "glpk" + File.separator;
-    private Model model;
+    private ModelContext model;
     private Map<Var, Integer> vars;
     private Map<Var, Double> solutions;
 
     @Override
-    public Result solveProblem(Model ilpModel) {
+    public Result solve(ModelContext ilpModel) {
         this.model = ilpModel;
         vars = new HashMap<>();
 
@@ -58,7 +58,7 @@ public class GlpkSolver implements Solver {
             }
 
             // Create constraints
-            constructConstraints(model, this.model.getConstraints());
+            constructConstraints(model, this.model.getNormalizedConstraints());
 
             GLPK.glp_set_obj_name(model, "objective");
             if (this.model.getObjective().isMax()) {
@@ -118,10 +118,6 @@ public class GlpkSolver implements Solver {
         throw new RuntimeException("Error in solver Run ");
     }
 
-    @Override
-    public double getVal(Var var) {
-        return solutions.get(var);
-    }
 
     private void createObjectiveTerms(glp_prob model, Objective obj) {
         GLPK.glp_set_obj_coef(model, 0, obj.getConstant());

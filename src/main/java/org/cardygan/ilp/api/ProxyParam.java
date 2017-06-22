@@ -42,8 +42,8 @@ public class ProxyParam extends Param {
 
     public void solve(Solver solver) {
         if (ilpParam == null) {
-            ilpModel.solve(solver);
-            double res = solver.getVal(targetIlpVar);
+            Result result = ilpModel.solve(solver);
+            double res = result.getSolutions().get(targetIlpVar);
             ilpParam = new DoubleParam(res);
         }
     }

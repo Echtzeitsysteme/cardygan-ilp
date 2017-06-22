@@ -1,5 +1,4 @@
 import org.cardygan.ilp.api.*;
-import org.cardygan.ilp.api.BinaryVar;
 import org.junit.Test;
 
 import static org.cardygan.ilp.api.util.ExprDsl.*;
@@ -24,9 +23,9 @@ public class SampleApiUsage {
         cstr2.setExpr(and(leq(sum(v1, v2), sum(v1, param(2))), geq(v3, v4)));
 
         Objective obj = model.newObjective(false);
-        obj.setTerm(sum(v1));
+        obj.setExpr(sum(v1));
 
-        Result res = model.solve(new CplexSolver());
+        Result res = model.solve(new CplexSolver("/Users/markus/Applications/IBM/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_osx/"));
 
     }
 
@@ -40,9 +39,9 @@ public class SampleApiUsage {
         cstr.setExpr(and(v1, v2));
 
         Objective obj = model.newObjective(false);
-        obj.setTerm(v1);
+        obj.setExpr(v1);
 
-        Result res = model.solve(new CplexSolver());
+        Result res = model.solve(new CplexSolver("/Users/markus/Applications/IBM/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_osx/"));
 
     }
 }

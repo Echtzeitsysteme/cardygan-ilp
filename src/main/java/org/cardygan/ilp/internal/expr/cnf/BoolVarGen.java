@@ -1,16 +1,16 @@
 package org.cardygan.ilp.internal.expr.cnf;
 
 
-import org.cardygan.ilp.api.Model;
 import org.cardygan.ilp.api.BinaryVar;
+import org.cardygan.ilp.api.ModelContext;
 
 public class BoolVarGen {
 
     private final static String prefix = "x";
-    private final Model model;
+    private final ModelContext model;
     private int counter = 0;
 
-    public BoolVarGen(Model model) {
+    public BoolVarGen(ModelContext model) {
         this.model = model;
     }
 

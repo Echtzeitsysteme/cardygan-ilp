@@ -27,10 +27,6 @@ public final class ExprDsl {
         return new DoubleParam(val);
     }
 
-//    public static IntVar intVar(String name) {
-//        return new IntVar(name);
-//    }
-
     public static Mult mult(ArithUnaryExpr left, ArithUnaryExpr right) {
         return new Mult(left, right);
     }

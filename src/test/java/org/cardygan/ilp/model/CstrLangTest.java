@@ -1,10 +1,10 @@
 package org.cardygan.ilp.model;
 
 import org.cardygan.ilp.api.*;
-import org.cardygan.ilp.api.expr.Var;
+import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Map;
+import java.util.Optional;
 
 import static org.cardygan.ilp.api.util.ExprDsl.*;
 import static org.junit.Assert.*;
@@ -13,6 +13,13 @@ import static org.junit.Assert.*;
  * Created by markus on 18.02.17.
  */
 public class CstrLangTest {
+
+    CplexSolver solver;
+
+    @Before
+    public void init() {
+        solver = new CplexSolver("/Users/markus/Applications/IBM/ILOG/CPLEX_Studio1263/cplex/bin/x86-64_osx/", true, Optional.of("/Users/markus/Desktop/testOutput/model.lp"));
+    }
 
     @Test
     public void basicAnd() {
@@ -24,16 +31,16 @@ public class CstrLangTest {
         cstr1.setExpr(and(leq(v1, param(3)), geq(v2, param(2))));
 
         Objective obj = model.newObjective(true);
-        obj.setTerm(sum(v1));
+        obj.setExpr(sum(v1));
 
         // test without M method
-        Result res = model.solve(new CplexSolver());
+        Result res = model.solve(solver);
         assertEquals(new Double(3), res.getObjVal().get());
         assertTrue(res.getSolutions().get(v2) >= 2);
 
         // test with M method
         model.setM(1000);
-        res = model.solve(new CplexSolver());
+        res = model.solve(solver);
         assertEquals(new Double(3), res.getObjVal().get());
         assertTrue(res.getSolutions().get(v2) >= 2);
     }
@@ -47,15 +54,17 @@ public class CstrLangTest {
         cstr1.setExpr(not(geq(v1, param(3))));
 
         Objective obj = model.newObjective(true);
-        obj.setTerm(sum(v1));
+        obj.setExpr(sum(v1));
 
-        Result res = model.solve(new CplexSolver());
+
+//        model.setM(1000);
+        Result res = model.solve(solver);
         assertEquals(new Double(2), res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
 
-        model.setM(1000);
-        res = model.solve(new CplexSolver());
-        assertEquals(new Double(2), res.getObjVal().get());
+//        model.setM(Optional.empty());
+//        res = model.solve(solver);
+//        assertEquals(new Double(2), res.getObjVal().get());
     }
 
     @Test
@@ -70,9 +79,9 @@ public class CstrLangTest {
 
 
         Objective obj = model.newObjective(true);
-        obj.setTerm(sum(f1));
+        obj.setExpr(sum(f1));
 
-        Result res = model.solve(new CplexSolver());
+        Result res = model.solve(solver);
 
         System.out.println("Unbounded? " + res.getStatistics().isUnbounded());
 
@@ -95,9 +104,9 @@ public class CstrLangTest {
 
 
         Objective obj = model.newObjective(true);
-        obj.setTerm(sum(f1));
+        obj.setExpr(sum(f1));
 
-        Result res = model.solve(new CplexSolver());
+        Result res = model.solve(solver);
 
         System.out.println("Unbounded? " + res.getStatistics().isUnbounded());
 
@@ -118,9 +127,9 @@ public class CstrLangTest {
 
 
         Objective obj = model.newObjective(true);
-        obj.setTerm(sum(f1));
+        obj.setExpr(sum(f1));
 
-        Result res = model.solve(new CplexSolver());
+        Result res = model.solve(solver);
 
         System.out.println("Unbounded? " + res.getStatistics().isUnbounded());
 
@@ -140,9 +149,9 @@ public class CstrLangTest {
 
 
         Objective obj = model.newObjective(true);
-        obj.setTerm(sum(f1));
+        obj.setExpr(sum(f1));
 
-        Result res = model.solve(new CplexSolver());
+        Result res = model.solve(solver);
 
         assertEquals(new Double(2), res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
@@ -162,9 +171,9 @@ public class CstrLangTest {
         cstr2.setExpr(eq(param(3), f1));
 
         Objective obj = model.newObjective(true);
-        obj.setTerm(sum(f2));
+        obj.setExpr(sum(f2));
 
-        Result res = model.solve(new CplexSolver());
+        Result res = model.solve(solver);
 
         assertEquals(new Double(11), res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
@@ -172,7 +181,9 @@ public class CstrLangTest {
     }
 
     @Test
-    public void implication2() {
+    public void implication2() throws NoSuchFieldException, IllegalAccessException {
+
+
         Model model = new Model();
 
         IntVar f1 = model.newIntVar("f1");
@@ -188,9 +199,9 @@ public class CstrLangTest {
         cstr3.setExpr(eq(param(1), f2));
 
         Objective obj = model.newObjective(true);
-        obj.setTerm(sum(f3));
+        obj.setExpr(sum(f3));
 
-        Result res = model.solve(new CplexSolver());
+        Result res = model.solve(solver);
 
         assertEquals(new Double(11), res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
@@ -218,15 +229,10 @@ public class CstrLangTest {
 //        cstr4.setExpr(eq(param(11), f3));
 
         Objective obj = model.newObjective(true);
-        obj.setTerm(sum(f3));
+        obj.setExpr(sum(f3));
 
 //        model.setM(1000);
-        Result res = model.solve(new CplexSolver());
-
-
-        for (Map.Entry<Var, Double> e : res.getSolutions().entrySet()) {
-            System.out.println("Var: " + e.getKey().getName() + "=" + e.getValue());
-        }
+        Result res = model.solve(solver);
 
         System.out.println(res.getStatistics().isUnbounded());
         assertEquals(new Double(11), res.getObjVal().get());
@@ -254,9 +260,9 @@ public class CstrLangTest {
         cstr3.setExpr(eq(f2, param(2)));
 
         Objective obj = model.newObjective(true);
-        obj.setTerm(sum(f3));
+        obj.setExpr(sum(f3));
 
-        Result res = model.solve(new CplexSolver());
+        Result res = model.solve(solver);
 
         System.out.println("Unbounded? " + res.getStatistics().isUnbounded());
 

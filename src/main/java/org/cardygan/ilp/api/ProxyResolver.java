@@ -1,12 +1,11 @@
 package org.cardygan.ilp.api;
 
-import org.cardygan.ilp.api.expr.Var;
-import org.cardygan.ilp.internal.Coefficient;
-import org.cardygan.ilp.internal.expr.NormalizedArithExpr;
+import org.cardygan.ilp.api.expr.*;
+import org.cardygan.ilp.api.expr.bool.*;
+import org.cardygan.ilp.internal.expr.ArithExprVisitor;
+import org.cardygan.ilp.internal.expr.BoolExprVisitor;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 public class ProxyResolver {
 
@@ -24,48 +23,145 @@ public class ProxyResolver {
         visited = new HashSet<Var>();
         toBeSolved = new Stack<ProxyParam>();
 
-        ilp.getConstraints().forEach(this::resolve);
+        List<ProxyParam> searchList = new ArrayList<>();
 
-        ilp.getObjective().getCoefficients().forEach(this::resolve);
+        for (Constraint cstr : ilp.getConstraints()) {
+            searchList.addAll(resolve(cstr));
+        }
 
-        while (!toBeSolved.isEmpty()) {
-            ProxyParam p = toBeSolved.pop();
+        searchList.addAll(resolve(ilp.getObjective()));
+
+        for (ProxyParam p : searchList) {
             p.solve(solver);
         }
 
+
     }
 
-    private void resolve(NormalizedArithExpr cstr) {
-        cstr.getCoefficients().forEach(this::resolve);
+    private List<ProxyParam> resolve(Objective obj) {
 
-        if (cstr.getRhs() instanceof ProxyParam) {
-            resolve((ProxyParam) cstr.getRhs());
-        }
+        List<ProxyParam> searchList = new ArrayList<>();
+
+        obj.getExpr().accept(new ProxyParamSearcher(searchList));
+
+        return searchList;
+    }
+
+    private List<ProxyParam> resolve(Constraint cstr) {
+
+        List<ProxyParam> searchList = new ArrayList<>();
+
+        cstr.getExpr().accept(new ProxyParamSearcher(searchList));
+
+        return searchList;
     }
 
 
-    private void resolve(Coefficient coef) {
-        if (!(coef.getParam() instanceof ProxyParam)) {
-            return;
+//    private void resolve(ProxyParam param) {
+//        if (visited.contains(param.getTargetIlpVar())) {
+//            throw new IllegalStateException("Cycle detected in Proxy Params. Cannot solve.");
+//        }
+//
+//        visited.add(param.getTargetIlpVar());
+//        toBeSolved.push(param);
+//
+////        for (NormalizedArithExpr cstr : param.getIlpModel().getNormalizedConstraints()) {
+////            cstr.getCoefficients().forEach(this::resolve);
+////        }
+////
+////        param.getIlpModel().getObjective().getCoefficients().forEach(this::resolve);
+//    }
+
+    private class ProxyParamSearcher implements BoolExprVisitor<Void>, ArithExprVisitor<Void> {
+
+        private final List<ProxyParam> searchList;
+
+        public ProxyParamSearcher(List<ProxyParam> searchList) {
+            this.searchList = searchList;
         }
 
-        ProxyParam param = (ProxyParam) coef.getParam();
-        resolve(param);
-    }
-
-    private void resolve(ProxyParam param) {
-        if (visited.contains(param.getTargetIlpVar())) {
-            throw new IllegalStateException("Cycle detected in Proxy Params. Cannot solve.");
+        @Override
+        public Void visit(Sum expr) {
+            expr.getSummands().forEach(e -> e.accept(this));
+            return null;
         }
 
-        visited.add(param.getTargetIlpVar());
-        toBeSolved.push(param);
-
-        for (NormalizedArithExpr cstr : param.getIlpModel().getConstraints()) {
-            cstr.getCoefficients().forEach(this::resolve);
+        @Override
+        public Void visit(Mult expr) {
+            expr.getLeft().accept(this);
+            expr.getRight().accept(this);
+            return null;
         }
 
-        param.getIlpModel().getObjective().getCoefficients().forEach(this::resolve);
+        @Override
+        public Void visit(Param expr) {
+            if (expr instanceof ProxyParam) {
+                searchList.add((ProxyParam) expr);
+            }
+            return null;
+        }
+
+        @Override
+        public Void visit(Neg expr) {
+            expr.getNeg().accept(this);
+            return null;
+        }
+
+        @Override
+        public Void visit(Var var) {
+            return null;
+        }
+
+        @Override
+        public Void visit(And expr) {
+            expr.getElements().forEach(e -> e.accept(this));
+            return null;
+        }
+
+        @Override
+        public Void visit(Or expr) {
+            expr.getElements().forEach(e -> e.accept(this));
+            return null;
+        }
+
+        @Override
+        public Void visit(Xor expr) {
+            expr.getLhs().accept(this);
+            expr.getRhs().accept(this);
+            return null;
+        }
+
+        @Override
+        public Void visit(Not expr) {
+            expr.getVal().accept(this);
+            return null;
+        }
+
+        @Override
+        public Void visit(Impl expr) {
+            expr.getLhs().accept(this);
+            expr.getRhs().accept(this);
+            return null;
+        }
+
+        @Override
+        public Void visit(BiImpl expr) {
+            expr.getLhs().accept(this);
+            expr.getRhs().accept(this);
+            return null;
+        }
+
+        @Override
+        public Void visit(BinaryVar expr) {
+            return null;
+        }
+
+        @Override
+        public Void visit(RelOp expr) {
+            expr.getLhs().accept(this);
+            expr.getRhs().accept(this);
+            return null;
+        }
     }
 
 }
