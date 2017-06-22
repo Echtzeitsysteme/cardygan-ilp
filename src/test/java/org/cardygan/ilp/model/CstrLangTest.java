@@ -54,7 +54,6 @@ public class CstrLangTest {
         Objective obj = model.newObjective(true);
         obj.setExpr(sum(v1));
 
-
 //        model.setM(1000);
         Result res = model.solve(solver);
         assertEquals(new Double(2), res.getObjVal().get());
@@ -69,7 +68,6 @@ public class CstrLangTest {
     public void equality() {
         Model model = new Model();
 
-
         IntVar f1 = model.newIntVar("f1");
 
         Constraint cstr1 = model.newConstraint("cstr1");
@@ -80,8 +78,6 @@ public class CstrLangTest {
         obj.setExpr(sum(f1));
 
         Result res = model.solve(solver);
-
-        System.out.println("Unbounded? " + res.getStatistics().isUnbounded());
 
         assertEquals(new Double(3), res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
@@ -105,8 +101,6 @@ public class CstrLangTest {
         obj.setExpr(sum(f1));
 
         Result res = model.solve(solver);
-
-        System.out.println("Unbounded? " + res.getStatistics().isUnbounded());
 
         assertEquals(new Double(3), res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
@@ -223,16 +217,11 @@ public class CstrLangTest {
         Constraint cstr3 = model.newConstraint("cstr2");
         cstr3.setExpr(eq(param(1), f2));
 
-//        Constraint cstr4 = model.newConstraint("cstr4");
-//        cstr4.setExpr(eq(param(11), f3));
-
         Objective obj = model.newObjective(true);
         obj.setExpr(sum(f3));
 
-//        model.setM(1000);
         Result res = model.solve(solver);
 
-        System.out.println(res.getStatistics().isUnbounded());
         assertEquals(new Double(11), res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
         assertFalse(res.getStatistics().isUnbounded());
@@ -241,7 +230,6 @@ public class CstrLangTest {
     @Test
     public void implication() {
         Model model = new Model();
-
 
         IntVar f1 = model.newIntVar("f1");
         IntVar f2 = model.newIntVar("f2");
@@ -261,8 +249,6 @@ public class CstrLangTest {
         obj.setExpr(sum(f3));
 
         Result res = model.solve(solver);
-
-        System.out.println("Unbounded? " + res.getStatistics().isUnbounded());
 
         assertEquals(new Double(3), res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
