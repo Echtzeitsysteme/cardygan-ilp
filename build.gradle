@@ -32,6 +32,6 @@ dependencies {
 
     compile group: 'org.gnu.glpk', name: 'glpk-java', version: '1.7.0'
 
-    compile files(project.cplexJarPath)
+    compile files(cplexJarPath)
 
 }

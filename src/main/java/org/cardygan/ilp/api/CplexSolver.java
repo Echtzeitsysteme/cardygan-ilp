@@ -125,8 +125,7 @@ public class CplexSolver implements Solver {
 
             final Optional<Double> objVal;
             if (succ) {
-                SolverUtil.assertIsInteger(cplex.getObjValue());
-                objVal = Optional.of((double) Math.round(cplex.getObjValue()));
+                objVal = Optional.of(cplex.getObjValue());
             } else {
                 objVal = Optional.empty();
             }
