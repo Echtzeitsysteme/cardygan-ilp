@@ -11,7 +11,7 @@ build:
   - mkdir tmp
   - cp ext_lib/solver.zip tmp
   - cd tmp
-  - unzip -P $UNZIP solver.zip
+  - unzip -P "$UNZIP" solver.zip
   - gradle build -PcplexJarPath=$(pwd)/cplex.jar
   
   post-ci:
