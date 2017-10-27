@@ -13,7 +13,7 @@ build:
   - cd tmp
   - gpg --output cplex.jar --yes --batch --decrypt --passphrase $UNZIP solver.gp
   - cd ..
-  - gradle build -PcplexJarPath=$(pwd)/tmp/cplex.jar
+  - gradle build -PcplexJarPath=$(pwd)/tmp/cplex.jar -x test
   
   post-ci:
   - rm -rf tmp
