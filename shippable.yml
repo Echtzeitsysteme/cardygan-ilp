@@ -4,8 +4,8 @@ jdk:
   - oraclejdk8
 
 env:
-  - secure: MpkoG+EqwfOX/tZWQ8QYijHWs/QoqQikA3lac20XFXJDzPpQTJqLhbmh03HMkvt6cDIZaeZHxPYjnqZWvK7LfWPZENa5T6QNaBQRHWZRUu6ej92ORn4/e1I6qK7MbMofmFNZyiGTFtV9819OSnjKpfaob6OFqFLARt3zh2JJ7UXszwo4kITvSRJfQVgzqA2TN/T+97KYj4I2ZatfTfi47sbo1SFjknkmrn227K/FIdfwADM95tM24bV4NHc8JpbWV837qZLLeS4eji4el/QrIOACubo1dy3henPKeC87IsJGaxmlY2ZILhAWX5McLjzHd/rut6nIiiU8Y5uW781bcg==
-
+  - secure: JCaleyxuX9ZeLbIm9XbF8KhMdlQgZMHnwzlkwOC1u3Ct2nfotl83AIXl/vVTt/ytv3gjZCxDRmwykKeVhmxc5/oqaGbJoBJ/Audj2PJgasLvzV3NdFrA6RjuuKuR/CkkNbOOeFnY9/NFVelKnZwBeNjB29Ah371PUlTerx79SAkNjdpefXtIweM++XNVOcRSopzCl9fF5JYGVIDsYYx7ypKWkjQIFyuZM/ricf5dzikt7wmpysdIDeUW/D965mGUmz9dC8dq2XrgFj/JgYnQ7jOaGjHLDH9rLu8s7NbGFHTVYBqqrUCawSCIX6IGTXbrFe9HA+0LYTQ864AdetSqHg==
+  
 build:
   ci:
   - mkdir tmp
@@ -16,7 +16,7 @@ build:
   - mkdir artifacts
   - cd artifacts
   - git init
-  - git remote add cardygan-mvn https://github.com/Echtzeitsysteme/cardygan-mvn.git
+  - git remote add cardygan-mvn $URL
   - git pull cardygan-mvn master
   - cd ..
   - gradle publish -PcplexJarPath=$(pwd)/tmp/cplex.jar -x test
