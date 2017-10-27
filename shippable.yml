@@ -23,6 +23,7 @@ build:
   - cd ..
   - gradle publish -PcplexJarPath=$(pwd)/tmp/cplex.jar -x test
   - cd artifacts
+  - git add .
   - git checkout --ours .
   - git add -u
   - git commit -m"updated release"
