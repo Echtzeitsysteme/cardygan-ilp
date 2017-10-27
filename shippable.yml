@@ -2,3 +2,18 @@ language: java
 
 jdk:
   - oraclejdk8
+
+env:
+  - secure: k1oJKE9aHEIspubs7hYbXirdR0c28wEHFFkxMaC3IwNAvzSVIymiA85aQ6Krer5up/Njf3PFZMKGzkAz8cSQUNP3E/nMgX1Ls92KXXi5/oEejCLZYDrUQIamNGes2PQxJWKSYQRkne2Y7dyvGdAgf47EXldjqp7sHRh6RnohBl7ALq/oUS2Lr1enHsEU6QSGINtSxOQ246qxEDXV0XMkCdW3gzli9d9F0kqk70tTwbFqBRkqHWwFo16+UvSgUtim3j+w+/hmORK+6oejIbsTxxMhejvW3hCzF3+AM/qSFXza+jRc2e6+504oUT+P4cKdhlt1Eutxu0cHxKgSt+VO1w==
+
+build:
+  ci:
+  - mkdir tmp
+  - cp ext_lib/solver.zip tmp
+  - cd tmp
+  - unzip -P $UNZIP solver.zip
+  - gradle build -PcplexJarPath=$(pwd)/cplex.jar
+  
+  post-ci:
+  - cd ..
+  - rm -rf tmp
