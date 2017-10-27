@@ -5,13 +5,13 @@ jdk:
 
 env:
   - secure: MpkoG+EqwfOX/tZWQ8QYijHWs/QoqQikA3lac20XFXJDzPpQTJqLhbmh03HMkvt6cDIZaeZHxPYjnqZWvK7LfWPZENa5T6QNaBQRHWZRUu6ej92ORn4/e1I6qK7MbMofmFNZyiGTFtV9819OSnjKpfaob6OFqFLARt3zh2JJ7UXszwo4kITvSRJfQVgzqA2TN/T+97KYj4I2ZatfTfi47sbo1SFjknkmrn227K/FIdfwADM95tM24bV4NHc8JpbWV837qZLLeS4eji4el/QrIOACubo1dy3henPKeC87IsJGaxmlY2ZILhAWX5McLjzHd/rut6nIiiU8Y5uW781bcg==
-  
+
 build:
   ci:
   - mkdir tmp
   - cp ext_lib/solver.zip tmp
   - cd tmp
-  - unzip -P $UNZIP solver.zip
+  - unzip -o -P$UNZIP solver.zip
   - gradle build -PcplexJarPath=$(pwd)/cplex.jar
   
   post-ci:
