@@ -47,6 +47,10 @@ public class ModelContext {
         return Collections.unmodifiableList(normalizedArithConstraints);
     }
 
+    public Model getModel() {
+        return model;
+    }
+
     public void preProcessConstraints() {
         // init with constraints from model
         model.getConstraints().forEach(cstr -> procConstraints.put(cstr, false));

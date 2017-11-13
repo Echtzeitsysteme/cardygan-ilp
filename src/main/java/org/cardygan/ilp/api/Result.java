@@ -34,8 +34,12 @@ public class Result {
 		private final boolean feasible;
 		private final boolean unbounded;
 		private final long duration;
+		private final Model ilp;
 
-		public Statistics(boolean feasible, boolean unbounded, long duration) {
+
+
+		public Statistics(Model ilp, boolean feasible, boolean unbounded, long duration) {
+			this.ilp = ilp;
 			this.feasible = feasible;
 			this.unbounded = unbounded;
 			this.duration = duration;
@@ -51,6 +55,10 @@ public class Result {
 
 		public long getDuration() {
 			return duration;
+		}
+
+		public Model getIlp() {
+			return ilp;
 		}
 
 	}
