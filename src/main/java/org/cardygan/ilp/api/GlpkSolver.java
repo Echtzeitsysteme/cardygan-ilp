@@ -104,7 +104,7 @@ public class GlpkSolver implements Solver {
             final Optional<Double> objectiveVal = (isFeasible) ? Optional.of(GLPK.glp_mip_obj_val(model))
                     : Optional.empty();
 
-            Result res = new Result(new Result.Statistics(ilpModel.getModel(), isFeasible, isUnbounded, end - start), solutions, objectiveVal);
+            Result res = new Result(ilpModel.getModel(), new Result.Statistics(isFeasible, isUnbounded, end - start), solutions, objectiveVal);
 
             GLPK.glp_delete_prob(model);
 //            GLPK.glp_free_env();

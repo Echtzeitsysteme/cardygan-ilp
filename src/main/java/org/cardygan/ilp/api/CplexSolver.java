@@ -130,7 +130,7 @@ public class CplexSolver implements Solver {
                 objVal = Optional.empty();
             }
 
-            final Result res = new Result(new Result.Statistics(model.getModel(), succ, cplex.getStatus() == IloCplex.Status.Unbounded, end - start),
+            final Result res = new Result(model.getModel(), new Result.Statistics(succ, cplex.getStatus() == IloCplex.Status.Unbounded, end - start),
                     solutions, objVal);
 
             cplex.end();

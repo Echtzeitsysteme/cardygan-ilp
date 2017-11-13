@@ -40,7 +40,7 @@ public class Result {
         private final boolean feasible;
         private final boolean unbounded;
         private final long duration;
-        
+
 
         public Statistics(boolean feasible, boolean unbounded, long duration) {
             this.feasible = feasible;
