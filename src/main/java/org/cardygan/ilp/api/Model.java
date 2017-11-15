@@ -1,5 +1,6 @@
 package org.cardygan.ilp.api;
 
+import org.cardygan.ilp.api.expr.Sum;
 import org.cardygan.ilp.api.expr.Var;
 import org.cardygan.ilp.api.expr.bool.RelOp;
 import org.cardygan.ilp.internal.Coefficient;
@@ -126,10 +127,10 @@ public class Model {
     }
 
     public Result solve(Solver solver) {
-        // reset previous transformed constraints
-//        normalizedArithConstraints.clear();
-//        procConstraints.clear();
-//        constraints.forEach(cstr -> procCons  traints.put(cstr, false));
+        if (objective == null){
+            // add dummy empty objective
+            newObjective(true).setExpr(new Sum());
+        }
         ModelContext ctx = new ModelContext(this);
 
         ProxyResolver resolver = new ProxyResolver(this, solver);
