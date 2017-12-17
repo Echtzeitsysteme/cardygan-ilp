@@ -104,6 +104,21 @@ public class Model {
         return var;
     }
 
+    /**
+     * Creates new decision variable with given name.
+     *
+     * @param name
+     * @return
+     */
+    public DoubleVar newDoubleVar(String name) {
+        if (vars.containsKey(name)) {
+            throw new IllegalStateException("Variable with name " + name + " already defined.");
+        }
+        DoubleVar var = new DoubleVar(name);
+        vars.put(name, var);
+        return var;
+    }
+
     public void removeVar(Var var) {
         vars.remove(var.getName());
     }

@@ -11,6 +11,10 @@ public final class ExprDsl {
         return new And(firstElem, otherElems);
     }
 
+    public static And and(List<BoolExpr> elements) {
+        return new And(elements);
+    }
+
     public static Sum sum(ArithExpr... summands) {
         return new Sum(summands);
     }

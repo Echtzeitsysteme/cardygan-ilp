@@ -24,6 +24,7 @@ public class CplexSolver implements Solver {
     private final Optional<String> modelOutputFilePath;
     private final boolean logging;
     private Map<Var, IloIntVar> vars;
+    private Map<Var, IloNumVar> numVars;
     private Map<Var, Double> solutions;
 
     public CplexSolver() {
@@ -69,6 +70,7 @@ public class CplexSolver implements Solver {
     @Override
     public Result solve(ModelContext model) {
         vars = new HashMap<>();
+        numVars = new HashMap<>();
 
         IloCplex cplex;
         try {
@@ -87,6 +89,8 @@ public class CplexSolver implements Solver {
                     vars.put(var, cplex.boolVar(var.getName()));
                 } else if (IlpUtil.isIntVar(var)) {
                     vars.put(var, cplex.intVar(0, Integer.MAX_VALUE, var.getName()));
+                } else if (IlpUtil.isDoubleVar(var)) {
+                    numVars.put(var, cplex.numVar(0, Double.MAX_VALUE, var.getName()));
                 } else {
                     throw new IllegalStateException("Not supported variable type.");
                 }
@@ -121,6 +125,10 @@ public class CplexSolver implements Solver {
                     SolverUtil.assertIsInteger(cplex.getValue(entry.getValue()));
                     solutions.put(entry.getKey(), (double) Math.round(cplex.getValue(entry.getValue())));
                 }
+
+                for (Entry<Var, IloNumVar> entry : numVars.entrySet()) {
+                    solutions.put(entry.getKey(), cplex.getValue(entry.getValue()));
+                }
             }
 
             final Optional<Double> objVal;
@@ -149,7 +157,13 @@ public class CplexSolver implements Solver {
         for (Coefficient coef : obj.getCoefficients()) {
             double paramVal = coef.getParam().getVal();
 
-            exprs[i] = model.prod(paramVal, vars.get(coef.getVar()));
+            if (vars.containsKey(coef.getVar())) {
+                exprs[i] = model.prod(paramVal, vars.get(coef.getVar()));
+            } else if (numVars.containsKey(coef.getVar())) {
+                exprs[i] = model.prod(paramVal, numVars.get(coef.getVar()));
+            } else {
+                throw new IllegalStateException("Could not find variable corresponding to " + coef.getVar().getName());
+            }
             i++;
         }
         return model.sum(exprs);
@@ -162,7 +176,15 @@ public class CplexSolver implements Solver {
             for (int i = 0; i < sos.size(); i++) {
                 weights[i] = i + 1;
             }
-            IloNumVar[] sosVars = sos.stream().map(v -> vars.get(v)).toArray(IloNumVar[]::new);
+            IloNumVar[] sosVars = sos.stream().map(v -> {
+                if (vars.containsKey(v)) {
+                    return vars.get(v);
+                } else if (numVars.containsKey(v)) {
+                    return numVars.get(v);
+                } else {
+                    throw new IllegalStateException("Could not find variable corresponding to " + v.getName());
+                }
+            }).toArray(IloNumVar[]::new);
             model.addSOS1(sosVars, weights);
         }
     }
@@ -173,7 +195,15 @@ public class CplexSolver implements Solver {
             IloNumExpr[] exprs = new IloNumExpr[ilpNormalizedArithExpr.getCoefficients().size()];
             int i = 0;
             for (Coefficient coef : ilpNormalizedArithExpr.getCoefficients()) {
-                exprs[i] = model.prod(coef.getParam().getVal(), vars.get(coef.getVar()));
+
+                if (vars.containsKey(coef.getVar())) {
+                    exprs[i] = model.prod(coef.getParam().getVal(), vars.get(coef.getVar()));
+                } else if (numVars.containsKey(coef.getVar())) {
+                    exprs[i] = model.prod(coef.getParam().getVal(), numVars.get(coef.getVar()));
+                } else {
+                    throw new IllegalStateException("Could not find variable corresponding to " + coef.getVar().getName());
+                }
+
                 i++;
             }
 
