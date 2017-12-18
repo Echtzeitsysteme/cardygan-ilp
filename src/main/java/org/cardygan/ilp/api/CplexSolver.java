@@ -22,37 +22,30 @@ public class CplexSolver implements Solver {
 
     private final static String ENV_VAR_CPLEX_LIB_PATH = "CPLEX_LIB_PATH";
     private final Optional<String> modelOutputFilePath;
+    private final Optional<Integer> seed;
     private final boolean logging;
     private Map<Var, IloIntVar> vars;
     private Map<Var, IloNumVar> numVars;
     private Map<Var, Double> solutions;
 
     public CplexSolver() {
-        String cplexLibraryPath = System.getenv(ENV_VAR_CPLEX_LIB_PATH);
-        if (cplexLibraryPath == null) {
+        this(Optional.empty(), Optional.empty(), Optional.empty(), false);
+    }
+
+    private CplexSolver(Optional<String> cplexLibraryPath, Optional<String> modelOutputFilePath, Optional<Integer> seed, boolean logging) {
+        String libraryPath = cplexLibraryPath.isPresent() ? cplexLibraryPath.get() : System.getenv(ENV_VAR_CPLEX_LIB_PATH);
+        if (libraryPath == null) {
             throw new IllegalStateException("Could not read Cplex library path. Environment variable " + ENV_VAR_CPLEX_LIB_PATH + " not set.");
         }
-        loadLibraryFromPath(cplexLibraryPath);
+        loadLibraryFromPath(libraryPath);
 
-        modelOutputFilePath = Optional.empty();
-        logging = false;
-
-    }
-
-    public CplexSolver(String cplexLibraryPath) {
-        this(cplexLibraryPath, false, Optional.empty());
-    }
-
-    public CplexSolver(String cplexLibraryPath, boolean logging) {
-        this(cplexLibraryPath, logging, Optional.empty());
-    }
-
-    public CplexSolver(String cplexLibraryPath, boolean logging, Optional<String> modelOutputFilePath) {
-        this.logging = logging;
+        this.seed = seed;
         this.modelOutputFilePath = modelOutputFilePath;
+        this.logging = logging;
+    }
 
-        loadLibraryFromPath(cplexLibraryPath);
-
+    public static CplexSolverBuilder create() {
+        return new CplexSolverBuilder();
     }
 
     private void loadLibraryFromPath(String cplexLibraryPath) {
@@ -129,6 +122,10 @@ public class CplexSolver implements Solver {
                 for (Entry<Var, IloNumVar> entry : numVars.entrySet()) {
                     solutions.put(entry.getKey(), cplex.getValue(entry.getValue()));
                 }
+            }
+
+            if (seed.isPresent()) {
+                cplex.setParam(IloCplex.Param.RandomSeed, seed.get());
             }
 
             final Optional<Double> objVal;
@@ -220,6 +217,42 @@ public class CplexSolver implements Solver {
             }
         }
 
+    }
+
+    public static class CplexSolverBuilder {
+        Optional<String> cplexLibraryPath = Optional.empty();
+        Optional<String> modelOutputFilePath = Optional.empty();
+        Optional<Integer> seed = Optional.empty();
+        ;
+        boolean logging = false;
+
+        private CplexSolverBuilder() {
+
+        }
+
+        public CplexSolverBuilder withSeed(int seed) {
+            this.seed = Optional.of(seed);
+            return this;
+        }
+
+        public CplexSolverBuilder withModelOutput(String absoluteFilePath) {
+            this.modelOutputFilePath = Optional.of(absoluteFilePath);
+            return this;
+        }
+
+        public CplexSolverBuilder withLibPath(String libraryPath) {
+            this.cplexLibraryPath = Optional.of(libraryPath);
+            return this;
+        }
+
+        public CplexSolverBuilder withLogging(boolean logging) {
+            this.logging = logging;
+            return this;
+        }
+
+        public CplexSolver build() {
+            return new CplexSolver(cplexLibraryPath, modelOutputFilePath, seed, logging);
+        }
     }
 
 
