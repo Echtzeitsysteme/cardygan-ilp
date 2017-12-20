@@ -31,6 +31,11 @@ public class Result {
         return objVal;
     }
 
+    @Override
+    public String toString() {
+        return "feasible: " + statistics.feasible + ", unbounded: " + statistics.unbounded + (objVal.isPresent() ? ", objVal: " + objVal : "") + ", duration" + statistics.getDuration();
+    }
+
     public Model getModel() {
         return model;
     }

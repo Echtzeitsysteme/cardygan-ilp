@@ -4,6 +4,7 @@ import org.cardygan.ilp.internal.expr.ArithExprVisitor;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Sum extends ArithExpr {
 
@@ -25,6 +26,8 @@ public class Sum extends ArithExpr {
     public <T> T accept(ArithExprVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
+
 
 
 }

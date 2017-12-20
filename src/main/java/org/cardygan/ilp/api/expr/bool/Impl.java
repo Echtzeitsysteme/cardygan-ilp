@@ -15,4 +15,6 @@ public class Impl extends BinaryBoolExpr {
 		return visitor.visit(this);
 	}
 
+
+
 }

@@ -1,6 +1,7 @@
 package org.cardygan.ilp.api;
 
 import org.cardygan.ilp.api.expr.bool.BoolExpr;
+import org.cardygan.ilp.api.util.ExprPrettyPrinter;
 
 /**
  * Created by markus on 18.02.17.
@@ -25,5 +26,10 @@ public class Constraint {
 
     public String getName() {
         return name;
+    }
+
+    @Override
+    public String toString() {
+        return name + ": " + expr.accept(new ExprPrettyPrinter());
     }
 }

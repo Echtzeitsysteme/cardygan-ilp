@@ -13,5 +13,4 @@ public class BiImpl extends BinaryBoolExpr {
     public <T> T accept(BoolExprVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
 }

@@ -1,7 +1,6 @@
 package org.cardygan.ilp.api.expr.bool;
 
 
-
 import org.cardygan.ilp.internal.expr.BoolExprVisitor;
 import org.cardygan.ilp.internal.util.Util;
 
@@ -9,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Or implements BoolExpr {
 
@@ -40,5 +40,7 @@ public class Or implements BoolExpr {
     public <T> T accept(BoolExprVisitor<T> visitor) {
         return visitor.visit(this);
     }
+
+
 
 }

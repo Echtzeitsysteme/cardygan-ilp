@@ -16,7 +16,6 @@ public class Neg extends ArithExpr {
     }
 
 
-
     @Override
     public <T> T accept(ArithExprVisitor<T> visitor) {
         return visitor.visit(this);

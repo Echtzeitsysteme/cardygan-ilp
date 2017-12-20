@@ -2,6 +2,7 @@ package org.cardygan.ilp.api;
 
 
 import org.cardygan.ilp.api.expr.ArithExpr;
+import org.cardygan.ilp.api.util.ExprPrettyPrinter;
 import org.cardygan.ilp.internal.Coefficient;
 import org.cardygan.ilp.internal.expr.ArithExprSimplifier;
 import org.cardygan.ilp.internal.util.Util;
@@ -49,6 +50,11 @@ public class Objective {
         }
 
         return coefficients.get();
+    }
+
+    @Override
+    public String toString() {
+        return (max ? "max " : "min ") + expr.accept(new ExprPrettyPrinter());
     }
 
     public boolean isMax() {
