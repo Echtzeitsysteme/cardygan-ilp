@@ -81,9 +81,9 @@ public class CplexSolver implements Solver {
                 if (IlpUtil.isBinaryVar(var)) {
                     vars.put(var, cplex.boolVar(var.getName()));
                 } else if (IlpUtil.isIntVar(var)) {
-                    vars.put(var, cplex.intVar(0, Integer.MAX_VALUE, var.getName()));
+                    vars.put(var, cplex.intVar(Integer.MIN_VALUE, Integer.MAX_VALUE, var.getName()));
                 } else if (IlpUtil.isDoubleVar(var)) {
-                    numVars.put(var, cplex.numVar(0, Double.MAX_VALUE, var.getName()));
+                    numVars.put(var, cplex.numVar(Double.MIN_VALUE, Double.MAX_VALUE, var.getName()));
                 } else {
                     throw new IllegalStateException("Not supported variable type.");
                 }
