@@ -36,6 +36,11 @@ public class BinaryVar extends Var implements BoolLiteral {
 	}
 
 	@Override
+	public String toString() {
+		return getName();
+	}
+
+	@Override
 	public <T> T accept(BoolExprVisitor<T> visitor) {
 		return visitor.visit(this);
 	}

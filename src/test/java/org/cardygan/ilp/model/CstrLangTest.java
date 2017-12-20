@@ -1,6 +1,7 @@
 package org.cardygan.ilp.model;
 
 import org.cardygan.ilp.api.*;
+import org.cardygan.ilp.api.expr.Var;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -251,6 +252,24 @@ public class CstrLangTest {
         Result res = model.solve(solver);
 
         assertEquals(new Double(3), res.getObjVal().get());
+        assertTrue(res.getStatistics().isFeasible());
+    }
+
+    @Test
+    public void complexImplication() {
+        Model model = new Model();
+        BinaryVar f0 = model.newBinaryVar("f0");
+        Var w0 = model.newDoubleVar("w0");
+
+//        model.newConstraint("c1").setExpr(eq(p(1), f0));
+        model.newConstraint("c1").setExpr(impl(f0, eq(sum(w0), p(0.1))));
+        model.newConstraint("c2").setExpr(impl(not(f0), eq(p(0), w0)));
+
+        model.newObjective(true).setExpr(w0);
+
+        Result res = model.solve(CplexSolver.create().build());
+
+//        assertEquals(new Double(3), res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
     }
 

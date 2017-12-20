@@ -6,7 +6,6 @@ import org.cardygan.ilp.api.ModelContext;
 
 public class BoolVarGen {
 
-    private final static String prefix = "x";
     private final ModelContext model;
     private int counter = 0;
 
@@ -16,7 +15,7 @@ public class BoolVarGen {
 
     public BinaryVar newVar() {
         counter++;
-        return model.newBinaryVar();
+        return model.newBinaryVarWithPrefix(ModelContext.HELPING_VAR_PREFIX);
     }
 
     public boolean isFirst() {

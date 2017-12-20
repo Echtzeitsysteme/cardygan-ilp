@@ -4,7 +4,6 @@ import org.cardygan.ilp.api.expr.ArithExpr;
 import org.cardygan.ilp.api.expr.Neg;
 import org.cardygan.ilp.api.expr.Var;
 import org.cardygan.ilp.api.expr.bool.*;
-import org.cardygan.ilp.internal.Coefficient;
 import org.cardygan.ilp.internal.Pair;
 import org.cardygan.ilp.internal.expr.BoolExprVisitor;
 import org.cardygan.ilp.internal.expr.BoolLiteralToConstraintProcessor;
@@ -13,7 +12,6 @@ import org.cardygan.ilp.internal.expr.NormalizedArithExprCreator;
 import org.cardygan.ilp.internal.expr.cnf.CnfClause;
 import org.cardygan.ilp.internal.expr.cnf.TseytinTransformer;
 import org.cardygan.ilp.internal.util.RandomString;
-import org.cardygan.ilp.internal.util.Util;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,11 +23,15 @@ import static org.cardygan.ilp.api.util.ExprDsl.*;
  */
 public class ModelContext {
 
-    private final static String VARIABLE_PREFIX = "tmp";
+    public final static double EPSILON = 0.001;
+    public final static String SLACK_VAR_PREFIX = "s";
+    public final static String HELPING_VAR_PREFIX = "r";
+    public final static String DEFAULT_VARIABLE_PREFIX = "tmp";
     private final Model model;
+    private Map<String, List<Var>> tmpVars = new HashMap<>();
     private List<NormalizedArithExpr> normalizedArithConstraints = new ArrayList<>();
     private Map<Constraint, Boolean> procConstraints = new HashMap<>();
-    private List<Var> tmpVars = new ArrayList<>();
+    //    private List<Var> tmpVars = new ArrayList<>();
     private int counter = 0;
     private List<Set<Var>> sos1 = new ArrayList<>();
 
@@ -187,27 +189,77 @@ public class ModelContext {
     }
 
     public BinaryVar newBinaryVar() {
-        String varName = VARIABLE_PREFIX + counter;
-        while (varInList(varName, model.getVars()) || varInList(varName, tmpVars)) {
-            varName = VARIABLE_PREFIX + counter++;
+        return newBinaryVarWithPrefix(DEFAULT_VARIABLE_PREFIX);
+    }
+
+    public BinaryVar newBinaryVarWithPrefix(String prefix) {
+        String varName = prefix + counter;
+
+        List<Var> vars;
+        if (!tmpVars.containsKey(prefix)) {
+            vars = new ArrayList<>();
+            tmpVars.put(prefix, vars);
+        } else {
+            vars = tmpVars.get(prefix);
+        }
+
+        while (varInList(varName, model.getVars()) || varInList(varName, vars)) {
+            varName = prefix + counter++;
         }
 
         BinaryVar var = new BinaryVar(varName);
 
-        tmpVars.add(var);
+        vars.add(var);
+
         return var;
     }
 
-    public IntVar newIntVar() {
-        String varName = VARIABLE_PREFIX + counter;
-        while (varInList(varName, model.getVars()) || varInList(varName, tmpVars)) {
-            varName = VARIABLE_PREFIX + counter++;
+    public IntVar newIntVarWithPrefix(String prefix) {
+        String varName = prefix + counter;
+
+        List<Var> vars;
+        if (!tmpVars.containsKey(prefix)) {
+            vars = new ArrayList<>();
+            tmpVars.put(prefix, vars);
+        } else {
+            vars = tmpVars.get(prefix);
+        }
+
+        while (varInList(varName, model.getVars()) || varInList(varName, vars)) {
+            varName = prefix + counter++;
         }
 
         IntVar var = new IntVar(varName);
 
-        tmpVars.add(var);
+        vars.add(var);
+
         return var;
+    }
+
+    public DoubleVar newDoubleVarWithPrefix(String prefix) {
+        String varName = prefix + counter;
+
+        List<Var> vars;
+        if (!tmpVars.containsKey(prefix)) {
+            vars = new ArrayList<>();
+            tmpVars.put(prefix, vars);
+        } else {
+            vars = tmpVars.get(prefix);
+        }
+
+        while (varInList(varName, model.getVars()) || varInList(varName, vars)) {
+            varName = prefix + counter++;
+        }
+
+        DoubleVar var = new DoubleVar(varName);
+
+        vars.add(var);
+
+        return var;
+    }
+
+    public IntVar newIntVar() {
+        return newIntVarWithPrefix(DEFAULT_VARIABLE_PREFIX);
     }
 
     public void addSos1(Set<Var> sos) {
@@ -228,16 +280,28 @@ public class ModelContext {
     public List<Var> getVars() {
         List<Var> ret = new ArrayList<>();
         ret.addAll(model.getVars());
-        ret.addAll(tmpVars);
+        for (List<Var> vars : tmpVars.values()) {
+            ret.addAll(vars);
+        }
+
         return ret;
     }
 
     public BinaryVar newBinaryVar(String name) {
-        if (varInList(name, model.getVars()) || varInList(name, tmpVars)) {
+        if (varInList(name, model.getVars()) || varInList(name, tmpVars.values().stream()
+                .flatMap(l -> l.stream())
+                .collect(Collectors.toList()))) {
             throw new IllegalStateException("Variable with name " + name + " already defined.");
         }
         BinaryVar var = new BinaryVar(name);
-        tmpVars.add(var);
+        List<Var> vars;
+        if (!tmpVars.containsKey("_namedVars")) {
+            vars = new ArrayList<>();
+        } else {
+            vars = tmpVars.get("_namedVars");
+        }
+        vars.add(var);
+
         return var;
     }
 }

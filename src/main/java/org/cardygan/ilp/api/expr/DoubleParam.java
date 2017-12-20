@@ -40,6 +40,10 @@ public class DoubleParam extends Param {
         return false;
     }
 
+    @Override
+    public String toString() {
+        return Double.toString(val);
+    }
 
 
     @Override

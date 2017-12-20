@@ -34,4 +34,9 @@ public class IntVar extends Var {
 		return false;
 	}
 
+
+	@Override
+	public String toString() {
+		return getName();
+	}
 }

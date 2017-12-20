@@ -2,7 +2,6 @@ package org.cardygan.ilp.internal.expr;
 
 
 import org.cardygan.ilp.api.BinaryVar;
-import org.cardygan.ilp.api.IntVar;
 import org.cardygan.ilp.api.ModelContext;
 import org.cardygan.ilp.api.expr.Var;
 import org.cardygan.ilp.api.expr.bool.Geq;
@@ -21,6 +20,7 @@ public class BoolLiteralToConstraintProcessor {
 
     private final ModelContext ilpModel;
     private final Set<RelOp> processed;
+
 
     public BoolLiteralToConstraintProcessor(ModelContext ilpModel) {
         this.ilpModel = ilpModel;
@@ -85,12 +85,12 @@ public class BoolLiteralToConstraintProcessor {
 
         // bind f_i to helping variable r_k using additional helping variable r_l
         BinaryVar r_k = var;
-        BinaryVar r_l = ilpModel.newBinaryVar();
+        BinaryVar r_l = ilpModel.newBinaryVarWithPrefix(ModelContext.HELPING_VAR_PREFIX);
 
         // r_l + r_k = 1
         ilpModel.newTmpConstraint("eq_" + r_k.getName()).setExpr(Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
 
-        IntVar s = ilpModel.newIntVar();
+        Var s = ilpModel.newIntVarWithPrefix(ModelContext.SLACK_VAR_PREFIX);
         List<Coefficient> summands = new ArrayList<>();
         summands.add(Util.coef(-1, s));
         summands.addAll(lhs);
@@ -103,7 +103,7 @@ public class BoolLiteralToConstraintProcessor {
 
         ilpModel.newTmpConstraint("leq1_" + r_k.getName()).setExpr(Util.leq(summands, rhs));
 
-        IntVar s_2 = ilpModel.newIntVar();
+        Var s_2 = ilpModel.newIntVarWithPrefix(ModelContext.SLACK_VAR_PREFIX);
         summands = new ArrayList<>();
         summands.add(Util.coef(1, s_2));
         summands.addAll(lhs);
@@ -114,7 +114,7 @@ public class BoolLiteralToConstraintProcessor {
         ilpModel.addSos1(sos2);
         ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos2), 1));
 
-        ilpModel.newTmpConstraint("leq2_" + r_k.getName()).setExpr(Util.geq(summands, rhs + 1));
+        ilpModel.newTmpConstraint("leq2_" + r_k.getName()).setExpr(Util.geq(summands, rhs + ModelContext.EPSILON));
 
 
     }
@@ -132,12 +132,12 @@ public class BoolLiteralToConstraintProcessor {
 
         // bind f_i to helping variable r_k using additional helping variable r_l
         BinaryVar r_k = var;
-        BinaryVar r_l = ilpModel.newBinaryVar();
+        BinaryVar r_l = ilpModel.newBinaryVarWithPrefix(ModelContext.HELPING_VAR_PREFIX);
 
         // r_l + r_k = 1
         ilpModel.newTmpConstraint("eq_" + r_k.getName()).setExpr(Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
 
-        IntVar s = ilpModel.newIntVar();
+        Var s = ilpModel.newIntVarWithPrefix(ModelContext.SLACK_VAR_PREFIX);
         List<Coefficient> summands = new ArrayList<>();
         summands.add(Util.coef(1, s));
         summands.addAll(lhs);
@@ -150,7 +150,7 @@ public class BoolLiteralToConstraintProcessor {
 
         ilpModel.newTmpConstraint("geq1_" + r_k.getName()).setExpr(Util.geq(summands, rhs));
 
-        IntVar s_2 = ilpModel.newIntVar();
+        Var s_2 = ilpModel.newIntVarWithPrefix(ModelContext.SLACK_VAR_PREFIX);
         summands = new ArrayList<>();
         summands.add(Util.coef(-1, s_2));
         summands.addAll(lhs);
@@ -161,7 +161,7 @@ public class BoolLiteralToConstraintProcessor {
         ilpModel.addSos1(sos2);
         ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos2), 1));
 
-        ilpModel.newTmpConstraint("geq2_" + r_k.getName()).setExpr(Util.leq(summands, rhs - 1));
+        ilpModel.newTmpConstraint("geq2_" + r_k.getName()).setExpr(Util.leq(summands, rhs - ModelContext.EPSILON));
 
     }
 
@@ -186,7 +186,7 @@ public class BoolLiteralToConstraintProcessor {
 
         // bind f_i to helping variable r_k using additional helping variable r_l
         BinaryVar r_k = var;
-        BinaryVar r_l = ilpModel.newBinaryVar();
+        BinaryVar r_l = ilpModel.newBinaryVarWithPrefix(ModelContext.HELPING_VAR_PREFIX);
 
         if (rhs == 0) {
             // (1-r_k) * M + f_1 - f_i + ... + f_n >= 0
@@ -250,7 +250,7 @@ public class BoolLiteralToConstraintProcessor {
 
         // bind f_i to helping variable r_k using additional helping variable r_l
         BinaryVar r_k = var;
-        BinaryVar r_l = ilpModel.newBinaryVar();
+        BinaryVar r_l = ilpModel.newBinaryVarWithPrefix(ModelContext.HELPING_VAR_PREFIX);
 
         if (rhs == 0) {
             // f_i - ... + f_n <= 0 + M * (1-r_k)
