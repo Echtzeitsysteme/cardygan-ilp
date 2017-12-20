@@ -33,7 +33,7 @@ public class Result {
 
     @Override
     public String toString() {
-        return "feasible: " + statistics.feasible + ", unbounded: " + statistics.unbounded + (objVal.isPresent() ? ", objVal: " + objVal : "") + ", duration" + statistics.getDuration();
+        return "feasible: " + statistics.feasible + ", unbounded: " + statistics.unbounded + (objVal.isPresent() ? ", objVal: " + objVal : "") + ", duration " + statistics.getDuration()+"ms";
     }
 
     public Model getModel() {

@@ -94,7 +94,7 @@ public class CplexSolver implements Solver {
 
                     vars.put(var, cplex.intVar(lb, ub, var.getName()));
                 } else if (IlpUtil.isDoubleVar(var)) {
-                    double lb = Double.MIN_VALUE;
+                    double lb = -Double.MAX_VALUE;
                     double ub = Double.MAX_VALUE;
 
                     if (model.getModel().getBounds(var) != null) {
