@@ -78,12 +78,33 @@ public class CplexSolver implements Solver {
 
             // Create vars
             for (Var var : model.getVars()) {
+
+
                 if (IlpUtil.isBinaryVar(var)) {
                     vars.put(var, cplex.boolVar(var.getName()));
                 } else if (IlpUtil.isIntVar(var)) {
-                    vars.put(var, cplex.intVar(Integer.MIN_VALUE, Integer.MAX_VALUE, var.getName()));
+                    int lb = 0;
+                    int ub = Integer.MAX_VALUE;
+
+                    if (model.getModel().getBounds(var) != null) {
+                        Model.Bounds bounds = model.getModel().getBounds(var);
+                        lb = bounds.getLb();
+                        ub = bounds.getUb();
+                    }
+
+                    vars.put(var, cplex.intVar(lb, ub, var.getName()));
                 } else if (IlpUtil.isDoubleVar(var)) {
-                    numVars.put(var, cplex.numVar(Double.MIN_VALUE, Double.MAX_VALUE, var.getName()));
+                    double lb = Double.MIN_VALUE;
+                    double ub = Double.MAX_VALUE;
+
+                    if (model.getModel().getBounds(var) != null) {
+                        Model.Bounds bounds = model.getModel().getBounds(var);
+                        lb = bounds.getLb();
+                        ub = bounds.getUb();
+                    }
+
+                    numVars.put(var, cplex.numVar(lb, ub, var.getName()));
+
                 } else {
                     throw new IllegalStateException("Not supported variable type.");
                 }

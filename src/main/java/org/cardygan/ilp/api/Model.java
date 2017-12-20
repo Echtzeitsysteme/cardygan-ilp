@@ -18,6 +18,7 @@ public class Model {
     private Optional<Integer> m = Optional.empty();
     private int counter = 0;
     private Map<String, Var> vars = new HashMap<>();
+    private Map<Var, Bounds> bounds = new HashMap<>();
     private List<Set<Var>> sos1 = new ArrayList<>();
 
 
@@ -32,7 +33,6 @@ public class Model {
     public List<Set<Var>> getSos1() {
         return Collections.unmodifiableList(sos1);
     }
-
 
     public List<Constraint> getConstraints() {
         return Collections.unmodifiableList(new ArrayList<>(constraints));
@@ -51,6 +51,11 @@ public class Model {
         return cstr;
     }
 
+    public Bounds getBounds(Var var) {
+        return bounds.get(var);
+    }
+
+
     /**
      * Creates new decision variable with given name.
      *
@@ -67,6 +72,22 @@ public class Model {
     }
 
     /**
+     * Creates new decision variable with given name and bounds.
+     *
+     * @param name
+     * @return
+     */
+    public IntVar newIntVar(String name, int lb, int ub) {
+        if (vars.containsKey(name)) {
+            throw new IllegalStateException("Variable with name " + name + " already defined.");
+        }
+        IntVar var = new IntVar(name);
+        vars.put(name, var);
+        bounds.put(var, new Bounds(lb, ub));
+        return var;
+    }
+
+    /**
      * Creates new variable of given type with an unique name id.
      *
      * @return
@@ -79,6 +100,7 @@ public class Model {
         return newIntVar(VARIABLE_PREFIX + counter);
     }
 
+
     public void addSos1(Set<Var> vars) {
         sos1.add(vars);
         List<Coefficient> coefficients = new ArrayList<>();
@@ -87,7 +109,6 @@ public class Model {
         }
         newConstraint("sos").setExpr(Util.geq(coefficients, 1));
     }
-
 
     /**
      * Creates new decision variable with given name.
@@ -119,6 +140,24 @@ public class Model {
         return var;
     }
 
+    /**
+     * Creates new decision variable with given name.
+     *
+     * @param name
+     * @param lb
+     * @param ub
+     * @return
+     */
+    public DoubleVar newDoubleVar(String name, int lb, int ub) {
+        if (vars.containsKey(name)) {
+            throw new IllegalStateException("Variable with name " + name + " already defined.");
+        }
+        DoubleVar var = new DoubleVar(name);
+        vars.put(name, var);
+        bounds.put(var, new Bounds(lb, ub));
+        return var;
+    }
+
     public void removeVar(Var var) {
         vars.remove(var.getName());
     }
@@ -142,7 +181,7 @@ public class Model {
     }
 
     public Result solve(Solver solver) {
-        if (objective == null){
+        if (objective == null) {
             // add dummy empty objective
             newObjective(true).setExpr(new Sum());
         }
@@ -156,7 +195,6 @@ public class Model {
         return solver.solve(ctx);
     }
 
-
     public Optional<Integer> getM(RelOp expr) {
         //TODO implement relOp specific BigM retrieval
         return getM();
@@ -166,12 +204,30 @@ public class Model {
         return m;
     }
 
+    public void setM(int m) {
+        this.m = Optional.of(m);
+    }
+
     public void setM(Optional<Integer> m) {
         this.m = m;
     }
 
-    public void setM(int m) {
-        this.m = Optional.of(m);
+    public static class Bounds {
+        private final int lb;
+        private final int ub;
+
+        public Bounds(int lb, int ub) {
+            this.lb = lb;
+            this.ub = ub;
+        }
+
+        public int getLb() {
+            return lb;
+        }
+
+        public int getUb() {
+            return ub;
+        }
     }
 
 
