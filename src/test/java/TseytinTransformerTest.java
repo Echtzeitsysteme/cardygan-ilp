@@ -127,9 +127,9 @@ public class TseytinTransformerTest {
         visitor.transform();
 
         List<BinaryVar> nonTmpVars = visitor.getVars().values().stream()
-                .filter(e -> !e.getName().startsWith("tmp")).collect(Collectors.toList());
+                .filter(e -> !e.getName().startsWith(ModelContext.HELPING_VAR_PREFIX)).collect(Collectors.toList());
 
-        List<BinaryVar> tmpVars = visitor.getVars().values().stream().filter(e -> e.getName().startsWith("tmp"))
+        List<BinaryVar> tmpVars = visitor.getVars().values().stream().filter(e -> e.getName().startsWith(ModelContext.HELPING_VAR_PREFIX))
                 .collect(Collectors.toList());
 
         int n = nonTmpVars.size();

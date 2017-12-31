@@ -114,7 +114,7 @@ public class BoolLiteralToConstraintProcessor {
         ilpModel.addSos1(sos2);
         ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos2), 1));
 
-        ilpModel.newTmpConstraint("leq2_" + r_k.getName()).setExpr(Util.geq(summands, rhs + ModelContext.EPSILON));
+        ilpModel.newTmpConstraint("leq2_" + r_k.getName()).setExpr(Util.geq(summands, rhs + 1));
 
 
     }
@@ -161,7 +161,8 @@ public class BoolLiteralToConstraintProcessor {
         ilpModel.addSos1(sos2);
         ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos2), 1));
 
-        ilpModel.newTmpConstraint("geq2_" + r_k.getName()).setExpr(Util.leq(summands, rhs - ModelContext.EPSILON));
+
+        ilpModel.newTmpConstraint("geq2_" + r_k.getName()).setExpr(Util.leq(summands, rhs < 1 && rhs > 0 ? rhs - ModelContext.EPSILON : rhs - 1));
 
     }
 

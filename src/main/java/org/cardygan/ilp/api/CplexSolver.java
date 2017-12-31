@@ -24,24 +24,30 @@ public class CplexSolver implements Solver {
     private final Optional<String> modelOutputFilePath;
     private final Optional<Integer> seed;
     private final boolean logging;
+    private final boolean preSolve;
+    private final int threadCount;
+    private final int parallelMode;
     private Map<Var, IloIntVar> vars;
     private Map<Var, IloNumVar> numVars;
     private Map<Var, Double> solutions;
 
     public CplexSolver() {
-        this(Optional.empty(), Optional.empty(), Optional.empty(), false);
+        this(new CplexSolverBuilder());
     }
 
-    private CplexSolver(Optional<String> cplexLibraryPath, Optional<String> modelOutputFilePath, Optional<Integer> seed, boolean logging) {
-        String libraryPath = cplexLibraryPath.isPresent() ? cplexLibraryPath.get() : System.getenv(ENV_VAR_CPLEX_LIB_PATH);
+    private CplexSolver(CplexSolverBuilder builder) {
+        String libraryPath = builder.cplexLibraryPath;
         if (libraryPath == null) {
             throw new IllegalStateException("Could not read Cplex library path. Environment variable " + ENV_VAR_CPLEX_LIB_PATH + " not set.");
         }
         loadLibraryFromPath(libraryPath);
 
-        this.seed = seed;
-        this.modelOutputFilePath = modelOutputFilePath;
-        this.logging = logging;
+        this.seed = builder.seed;
+        this.modelOutputFilePath = builder.modelOutputFilePath;
+        this.logging = builder.logging;
+        this.preSolve = builder.presolve;
+        this.threadCount = builder.threadCount;
+        this.parallelMode = builder.parallelMode;
     }
 
     public static CplexSolverBuilder create() {
@@ -123,7 +129,10 @@ public class CplexSolver implements Solver {
             }
 
             // deactivate presolve to prevent "UnounbdedOrInfeasible" status
-            cplex.setParam(IloCplex.BooleanParam.PreInd, false);
+            cplex.setParam(IloCplex.BooleanParam.PreInd, preSolve);
+
+            cplex.setParam(IloCplex.IntParam.ParallelMode, parallelMode);
+            cplex.setParam(IloCplex.Param.Threads, threadCount);
 
             final long start = System.currentTimeMillis();
             boolean succ = cplex.solve();
@@ -241,18 +250,40 @@ public class CplexSolver implements Solver {
     }
 
     public static class CplexSolverBuilder {
-        Optional<String> cplexLibraryPath = Optional.empty();
+        public final static int CPX_PARALLEL_OPPORTUNISTIC = -1;
+        public final static int CPX_PARALLEL_AUTO = 0;
+        public final static int CPX_PARALLEL_DETERMINISTIC = 1;
+
+        String cplexLibraryPath;
         Optional<String> modelOutputFilePath = Optional.empty();
         Optional<Integer> seed = Optional.empty();
-        ;
+        int parallelMode = CPX_PARALLEL_AUTO;
+        int threadCount = 0;
+        boolean presolve = false;
+
         boolean logging = false;
 
         private CplexSolverBuilder() {
-
+            this.cplexLibraryPath = System.getenv(ENV_VAR_CPLEX_LIB_PATH);
         }
 
         public CplexSolverBuilder withSeed(int seed) {
             this.seed = Optional.of(seed);
+            return this;
+        }
+
+        public CplexSolverBuilder withPresolve() {
+            this.presolve = true;
+            return this;
+        }
+
+        public CplexSolverBuilder withThreadCount(int noThreads) {
+            this.threadCount = noThreads;
+            return this;
+        }
+
+        public CplexSolverBuilder withParallelMode(int parallelMode) {
+            this.parallelMode = parallelMode;
             return this;
         }
 
@@ -262,7 +293,7 @@ public class CplexSolver implements Solver {
         }
 
         public CplexSolverBuilder withLibPath(String libraryPath) {
-            this.cplexLibraryPath = Optional.of(libraryPath);
+            this.cplexLibraryPath = libraryPath;
             return this;
         }
 
@@ -272,7 +303,7 @@ public class CplexSolver implements Solver {
         }
 
         public CplexSolver build() {
-            return new CplexSolver(cplexLibraryPath, modelOutputFilePath, seed, logging);
+            return new CplexSolver(this);
         }
     }
 
