@@ -148,7 +148,7 @@ public class Model {
      * @param ub
      * @return
      */
-    public DoubleVar newDoubleVar(String name, int lb, int ub) {
+    public DoubleVar newDoubleVar(String name, double lb, double ub) {
         if (vars.containsKey(name)) {
             throw new IllegalStateException("Variable with name " + name + " already defined.");
         }
