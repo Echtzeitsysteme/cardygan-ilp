@@ -213,19 +213,19 @@ public class Model {
     }
 
     public static class Bounds {
-        private final int lb;
-        private final int ub;
+        private final double lb;
+        private final double ub;
 
-        public Bounds(int lb, int ub) {
+        public Bounds(double lb, double ub) {
             this.lb = lb;
             this.ub = ub;
         }
 
-        public int getLb() {
+        public double getLb() {
             return lb;
         }
 
-        public int getUb() {
+        public double getUb() {
             return ub;
         }
     }

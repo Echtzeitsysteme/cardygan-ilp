@@ -94,8 +94,8 @@ public class CplexSolver implements Solver {
 
                     if (model.getModel().getBounds(var) != null) {
                         Model.Bounds bounds = model.getModel().getBounds(var);
-                        lb = bounds.getLb();
-                        ub = bounds.getUb();
+                        lb = new Double(bounds.getLb()).intValue();
+                        ub = new Double(bounds.getUb()).intValue();
                     }
 
                     vars.put(var, cplex.intVar(lb, ub, var.getName()));
