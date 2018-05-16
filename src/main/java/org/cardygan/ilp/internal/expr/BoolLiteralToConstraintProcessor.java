@@ -90,7 +90,7 @@ public class BoolLiteralToConstraintProcessor {
         // r_l + r_k = 1
         ilpModel.newTmpConstraint("eq_" + r_k.getName()).setExpr(Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
 
-        Var s = ilpModel.newIntVarWithPrefix(ModelContext.SLACK_VAR_PREFIX);
+        Var s = ilpModel.newDoubleVarWithPrefix(ModelContext.SLACK_VAR_PREFIX);
         List<Coefficient> summands = new ArrayList<>();
         summands.add(Util.coef(-1, s));
         summands.addAll(lhs);
@@ -99,11 +99,11 @@ public class BoolLiteralToConstraintProcessor {
         sos.add(s);
         sos.add(r_k);
         ilpModel.addSos1(sos);
-        ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos), 1));
+        ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos), ModelContext.EPSILON));
 
         ilpModel.newTmpConstraint("leq1_" + r_k.getName()).setExpr(Util.leq(summands, rhs));
 
-        Var s_2 = ilpModel.newIntVarWithPrefix(ModelContext.SLACK_VAR_PREFIX);
+        Var s_2 = ilpModel.newDoubleVarWithPrefix(ModelContext.SLACK_VAR_PREFIX);
         summands = new ArrayList<>();
         summands.add(Util.coef(1, s_2));
         summands.addAll(lhs);
@@ -112,9 +112,9 @@ public class BoolLiteralToConstraintProcessor {
         sos2.add(s_2);
         sos2.add(r_l);
         ilpModel.addSos1(sos2);
-        ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos2), 1));
+        ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos2), ModelContext.EPSILON));
 
-        ilpModel.newTmpConstraint("leq2_" + r_k.getName()).setExpr(Util.geq(summands, rhs + 1));
+        ilpModel.newTmpConstraint("leq2_" + r_k.getName()).setExpr(Util.geq(summands, rhs < 1 ? rhs + ModelContext.EPSILON : rhs + 1));
 
 
     }
@@ -137,7 +137,7 @@ public class BoolLiteralToConstraintProcessor {
         // r_l + r_k = 1
         ilpModel.newTmpConstraint("eq_" + r_k.getName()).setExpr(Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
 
-        Var s = ilpModel.newIntVarWithPrefix(ModelContext.SLACK_VAR_PREFIX);
+        Var s = ilpModel.newDoubleVarWithPrefix(ModelContext.SLACK_VAR_PREFIX);
         List<Coefficient> summands = new ArrayList<>();
         summands.add(Util.coef(1, s));
         summands.addAll(lhs);
@@ -146,11 +146,11 @@ public class BoolLiteralToConstraintProcessor {
         sos.add(s);
         sos.add(r_k);
         ilpModel.addSos1(sos);
-        ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos), 1));
+        ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos), ModelContext.EPSILON));
 
         ilpModel.newTmpConstraint("geq1_" + r_k.getName()).setExpr(Util.geq(summands, rhs));
 
-        Var s_2 = ilpModel.newIntVarWithPrefix(ModelContext.SLACK_VAR_PREFIX);
+        Var s_2 = ilpModel.newDoubleVarWithPrefix(ModelContext.SLACK_VAR_PREFIX);
         summands = new ArrayList<>();
         summands.add(Util.coef(-1, s_2));
         summands.addAll(lhs);
@@ -159,10 +159,9 @@ public class BoolLiteralToConstraintProcessor {
         sos2.add(s_2);
         sos2.add(r_l);
         ilpModel.addSos1(sos2);
-        ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos2), 1));
+        ilpModel.newTmpConstraint("sos").setExpr(Util.geq(createSosCoeff(sos2), ModelContext.EPSILON));
 
-
-        ilpModel.newTmpConstraint("geq2_" + r_k.getName()).setExpr(Util.leq(summands, rhs < 1 && rhs > 0 ? rhs - ModelContext.EPSILON : rhs - 1));
+        ilpModel.newTmpConstraint("geq2_" + r_k.getName()).setExpr(Util.leq(summands,  rhs - ModelContext.EPSILON ));
 
     }
 

@@ -23,7 +23,7 @@ import static org.cardygan.ilp.api.util.ExprDsl.*;
  */
 public class ModelContext {
 
-    public final static double EPSILON = 0.001;
+    public final static double EPSILON = 0.0001;
     public final static String SLACK_VAR_PREFIX = "s";
     public final static String HELPING_VAR_PREFIX = "r";
     public final static String DEFAULT_VARIABLE_PREFIX = "tmp";

@@ -126,6 +126,19 @@ public class Model {
     }
 
     /**
+     * Creates new decision variable.
+     *
+     * @return
+     */
+    public DoubleVar newDoubleVar() {
+        while (vars.containsKey(VARIABLE_PREFIX + counter)) {
+            counter++;
+        }
+
+        return newDoubleVar(VARIABLE_PREFIX + counter);
+    }
+
+    /**
      * Creates new decision variable with given name.
      *
      * @param name
@@ -141,7 +154,7 @@ public class Model {
     }
 
     /**
-     * Creates new decision variable with given name.
+     * Creates new decision variable with given name and bounds.
      *
      * @param name
      * @param lb

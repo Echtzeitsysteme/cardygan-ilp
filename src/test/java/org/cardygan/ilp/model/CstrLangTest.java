@@ -124,8 +124,6 @@ public class CstrLangTest {
 
         Result res = model.solve(solver);
 
-        System.out.println("Unbounded? " + res.getStatistics().isUnbounded());
-
         assertEquals(new Double(3), res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
     }
@@ -271,6 +269,109 @@ public class CstrLangTest {
 
 //        assertEquals(new Double(3), res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
+    }
+
+    @Test
+    public void testModel1() {
+        Model model = new Model();
+        IntVar f0 = model.newIntVar("f0", 0, 5);
+        IntVar f1 = model.newIntVar("f1", 0, 7);
+        IntVar f2 = model.newIntVar("f2", 0, 8);
+
+        model.newConstraint("c1").setExpr(
+                impl(and(eq(p(3), sum(f0, f1)), eq(f0, p(1))), eq(f2, p(2)))
+        );
+
+
+        model.newObjective(true).setExpr(f0);
+
+        Result res = model.solve(CplexSolver.create().build());
+
+        assertTrue(5d == res.getObjVal().get());
+        assertTrue(res.getStatistics().isFeasible());
+    }
+
+    @Test
+    public void testModel2() {
+        Model model = new Model();
+        IntVar f0 = model.newIntVar("f0", 0, 5);
+        IntVar f2 = model.newIntVar("f2", 0, 8);
+        IntVar f3 = model.newIntVar("f3");
+
+        model.newConstraint("c1").setExpr(
+                and(
+                        impl(eq(p(3), f2), eq(f3, p(2))),
+                        impl(not(eq(p(3), f2)), eq(f3, p(3)))
+                )
+        );
+        model.newConstraint("c2").setExpr(eq(f2, p(3)));
+
+        model.newObjective(true).setExpr(f0);
+
+        Result res = model.solve(CplexSolver.create().build());
+
+        assertTrue(res.getStatistics().isFeasible());
+        assertEquals(new Double(2d), res.getSolutions().get(f3));
+    }
+
+    @Test
+    public void testModel3() {
+        Model model = new Model();
+        IntVar v0 = model.newIntVar();
+        IntVar v1 = model.newIntVar();
+        IntVar v2 = model.newIntVar();
+        IntVar v3 = model.newIntVar();
+        IntVar v4 = model.newIntVar();
+        IntVar v5 = model.newIntVar();
+        IntVar v6 = model.newIntVar();
+
+
+        model.newConstraint("c1").setExpr(eq(v4, v1));
+        model.newConstraint("c2").setExpr(eq(v5, v3));
+        model.newConstraint("c3").setExpr(eq(v6, v3));
+
+        model.newConstraint("c4").setExpr(
+                and(
+                        impl(eq(v4, p(2)), eq(v5, p(3))),
+                        impl(not(eq(v4, p(2))), eq(v6, p(1)))
+                )
+        );
+        model.newConstraint("c5").setExpr(and(leq(p(1), v0), leq(v0, p(1))));
+        model.newConstraint("c6").setExpr(leq(mult(p(1), v0), sum(v1, v2, v3)));
+        model.newConstraint("c7").setExpr(and(leq(mult(p(1), v0), v1), leq(v1, mult(p(6), v0))));
+        model.newConstraint("c8").setExpr(and(leq(mult(p(1), v0), v2), leq(v2, mult(p(3), v0))));
+        model.newConstraint("c9").setExpr(and(leq(mult(p(1), v0), v3), leq(v3, mult(p(4), v0))));
+
+
+
+        model.newObjective(true).setExpr(v3);
+
+        Result res = model.solve(CplexSolver.create().build());
+
+        assertTrue(res.getStatistics().isFeasible());
+
+        assertEquals(new Double(3d), res.getSolutions().get(v3));
+    }
+
+    @Test
+    public void testModel4() {
+        Model model = new Model();
+
+        BinaryVar v0 = model.newBinaryVar();
+        DoubleVar v1 = model.newDoubleVar();
+
+        model.newConstraint("c1").setExpr(eq(v0, p(1)));
+        model.newConstraint("c2").setExpr(impl(v0, leq(v1,p(5.303304908059076))));
+        model.newConstraint("c3").setExpr(impl(not(v0), eq(v1,p(0))));
+        model.newConstraint("c4").setExpr(eq(v1,p(0.6931471805599453)));
+
+        model.newObjective(true).setExpr(v1);
+
+        Result res = model.solve(CplexSolver.create().build());
+
+        assertTrue(res.getStatistics().isFeasible());
+
+        assertEquals(new Double(0.6931471805599453), res.getSolutions().get(v1));
     }
 
 }

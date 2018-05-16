@@ -30,6 +30,7 @@ public class CplexSolver implements Solver {
     private Map<Var, IloIntVar> vars;
     private Map<Var, IloNumVar> numVars;
     private Map<Var, Double> solutions;
+    private final Optional<Long> timeout;
 
     public CplexSolver() {
         this(new CplexSolverBuilder());
@@ -48,6 +49,7 @@ public class CplexSolver implements Solver {
         this.preSolve = builder.presolve;
         this.threadCount = builder.threadCount;
         this.parallelMode = builder.parallelMode;
+        this.timeout = builder.timeout;
     }
 
     public static CplexSolverBuilder create() {
@@ -80,6 +82,10 @@ public class CplexSolver implements Solver {
                 cplex.setOut(System.out);
             } else {
                 cplex.setOut(null);
+            }
+
+            if (timeout.isPresent()) {
+                cplex.setParam(IloCplex.Param.TimeLimit, timeout.get());
             }
 
             // Create vars
@@ -145,12 +151,26 @@ public class CplexSolver implements Solver {
             solutions = new HashMap<>();
             if (succ) {
                 for (Entry<Var, IloIntVar> entry : vars.entrySet()) {
-                    SolverUtil.assertIsInteger(cplex.getValue(entry.getValue()));
-                    solutions.put(entry.getKey(), (double) Math.round(cplex.getValue(entry.getValue())));
+                    try {
+                        SolverUtil.assertIsInteger(cplex.getValue(entry.getValue()));
+                        solutions.put(entry.getKey(), (double) Math.round(cplex.getValue(entry.getValue())));
+                    } catch (IloCplex.UnknownObjectException e) {
+                        if (logging)
+                            System.err.println("Warning: Variable " + entry.getKey().getName()
+                                    + " is not in the active model! Could not retrieve objective value.");
+                        solutions.put(entry.getKey(), 0d);
+                    }
                 }
 
                 for (Entry<Var, IloNumVar> entry : numVars.entrySet()) {
-                    solutions.put(entry.getKey(), cplex.getValue(entry.getValue()));
+                    try {
+                        solutions.put(entry.getKey(), cplex.getValue(entry.getValue()));
+                    } catch (IloCplex.UnknownObjectException e) {
+                        if (logging)
+                            System.err.println("Warning: Variable " + entry.getKey().getName()
+                                    + " is not in the active model! Could not retrieve objective value.");
+                        solutions.put(entry.getKey(), 0d);
+                    }
                 }
             }
 
@@ -260,6 +280,7 @@ public class CplexSolver implements Solver {
         int parallelMode = CPX_PARALLEL_AUTO;
         int threadCount = 0;
         boolean presolve = false;
+        Optional<Long> timeout = Optional.empty();
 
         boolean logging = false;
 
@@ -269,6 +290,17 @@ public class CplexSolver implements Solver {
 
         public CplexSolverBuilder withSeed(int seed) {
             this.seed = Optional.of(seed);
+            return this;
+        }
+
+        /**
+         * Sets timeout of solver in seconds.
+         *
+         * @param timeout
+         * @return
+         */
+        public CplexSolverBuilder withTimeOut(long timeout) {
+            this.timeout = Optional.of(timeout);
             return this;
         }
 

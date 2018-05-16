@@ -13,4 +13,5 @@ public interface ArithExprVisitor<T> {
     T visit(Neg expr);
 
     T visit(Var var);
+
 }
