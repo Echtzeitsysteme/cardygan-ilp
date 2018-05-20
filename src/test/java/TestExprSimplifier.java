@@ -1,8 +1,8 @@
-import org.cardygan.ilp.api.BinaryVar;
-import org.cardygan.ilp.api.IntVar;
-import org.cardygan.ilp.api.Model;
-import org.cardygan.ilp.api.expr.ArithExpr;
-import org.cardygan.ilp.internal.Pair;
+import org.cardygan.ilp.api.model.BinaryVar;
+import org.cardygan.ilp.api.model.IntVar;
+import org.cardygan.ilp.api.model.Model;
+import org.cardygan.ilp.api.model.ArithExpr;
+import org.cardygan.ilp.internal.util.Pair;
 import org.cardygan.ilp.internal.expr.ArithExprSimplifier;
 import org.junit.Before;
 import org.junit.Test;

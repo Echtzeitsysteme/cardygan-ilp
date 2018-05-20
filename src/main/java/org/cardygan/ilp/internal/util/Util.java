@@ -1,13 +1,13 @@
 package org.cardygan.ilp.internal.util;
 
-import org.cardygan.ilp.api.BinaryVar;
-import org.cardygan.ilp.api.IntVar;
-import org.cardygan.ilp.api.expr.*;
-import org.cardygan.ilp.api.expr.bool.Eq;
-import org.cardygan.ilp.api.expr.bool.Geq;
-import org.cardygan.ilp.api.expr.bool.Leq;
+import org.cardygan.ilp.api.model.BinaryVar;
+import org.cardygan.ilp.api.model.IntVar;
+import org.cardygan.ilp.api.model.*;
+import org.cardygan.ilp.api.model.bool.Eq;
+import org.cardygan.ilp.api.model.bool.Geq;
+import org.cardygan.ilp.api.model.bool.Leq;
 import org.cardygan.ilp.api.util.ExprDsl;
-import org.cardygan.ilp.internal.Coefficient;
+import org.cardygan.ilp.internal.expr.Coefficient;
 
 import java.util.List;
 import java.util.stream.Collectors;

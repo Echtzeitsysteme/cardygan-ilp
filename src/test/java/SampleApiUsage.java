@@ -1,4 +1,7 @@
 import org.cardygan.ilp.api.*;
+import org.cardygan.ilp.api.model.BinaryVar;
+import org.cardygan.ilp.api.model.Model;
+import org.cardygan.ilp.api.solver.CplexSolver;
 import org.junit.Test;
 
 import static org.cardygan.ilp.api.util.ExprDsl.*;
@@ -12,18 +15,15 @@ public class SampleApiUsage {
     public void simpleModel1() {
         Model model = new Model();
 
-        Constraint cstr1 = model.newConstraint("name");
         BinaryVar v1 = model.newBinaryVar("v1");
         BinaryVar v2 = model.newBinaryVar("v2");
-        cstr1.setExpr(leq(sum(v1, v2), sum(v1, param(2))));
+        model.newConstraint("name", leq(sum(v1, v2), sum(v1, param(2))));
 
-        Constraint cstr2 = model.newConstraint("name2");
         BinaryVar v3 = model.newBinaryVar();
         BinaryVar v4 = model.newBinaryVar();
-        cstr2.setExpr(and(leq(sum(v1, v2), sum(v1, param(2))), geq(v3, v4)));
+        model.newConstraint("name2", and(leq(sum(v1, v2), sum(v1, param(2))), geq(v3, v4)));
 
-        Objective obj = model.newObjective(false);
-        obj.setExpr(sum(v1));
+        model.newObjective(false, sum(v1));
 
         Result res = model.solve(new CplexSolver());
 
@@ -33,13 +33,11 @@ public class SampleApiUsage {
     public void simpleModel2() {
         Model model = new Model();
 
-        Constraint cstr = model.newConstraint("name2");
         BinaryVar v1 = model.newBinaryVar("var1");
         BinaryVar v2 = model.newBinaryVar("var2");
-        cstr.setExpr(and(v1, v2));
+        model.newConstraint("name2", and(v1, v2));
 
-        Objective obj = model.newObjective(false);
-        obj.setExpr(v1);
+        model.newObjective(false, v1);
 
         Result res = model.solve(new CplexSolver());
 

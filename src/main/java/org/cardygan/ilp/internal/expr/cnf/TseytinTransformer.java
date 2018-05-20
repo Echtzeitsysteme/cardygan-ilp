@@ -1,9 +1,8 @@
 package org.cardygan.ilp.internal.expr.cnf;
 
-import org.cardygan.ilp.api.Model;
-import org.cardygan.ilp.api.ModelContext;
-import org.cardygan.ilp.api.expr.bool.*;
-import org.cardygan.ilp.api.BinaryVar;
+import org.cardygan.ilp.api.model.Model;
+import org.cardygan.ilp.api.model.bool.*;
+import org.cardygan.ilp.api.model.BinaryVar;
 import org.cardygan.ilp.internal.expr.BoolExprVisitor;
 
 import java.util.*;
@@ -26,7 +25,7 @@ public class TseytinTransformer {
     private final BoolExpr expr;
 
 
-    public TseytinTransformer(ModelContext model, BoolExpr expr) {
+    public TseytinTransformer(Model model, BoolExpr expr) {
         varMapping = new HashMap<>();
         vars = new HashMap<>();
         varGen = new BoolVarGen(model);

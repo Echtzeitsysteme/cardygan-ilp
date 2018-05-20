@@ -1,5 +1,5 @@
-import org.cardygan.ilp.api.expr.bool.*;
-import org.cardygan.ilp.api.BinaryVar;
+import org.cardygan.ilp.api.model.bool.*;
+import org.cardygan.ilp.api.model.BinaryVar;
 import org.cardygan.ilp.internal.expr.BoolExprVisitor;
 
 import java.util.Map;

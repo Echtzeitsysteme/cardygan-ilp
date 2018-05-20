@@ -1,21 +1,21 @@
 package org.cardygan.ilp.internal.expr.cnf;
 
 
-import org.cardygan.ilp.api.BinaryVar;
-import org.cardygan.ilp.api.ModelContext;
+import org.cardygan.ilp.api.model.BinaryVar;
+import org.cardygan.ilp.api.model.Model;
 
 public class BoolVarGen {
 
-    private final ModelContext model;
+    private final Model model;
     private int counter = 0;
 
-    public BoolVarGen(ModelContext model) {
+    public BoolVarGen(Model model) {
         this.model = model;
     }
 
     public BinaryVar newVar() {
         counter++;
-        return model.newBinaryVarWithPrefix(ModelContext.HELPING_VAR_PREFIX);
+        return model.newBinaryVar();
     }
 
     public boolean isFirst() {

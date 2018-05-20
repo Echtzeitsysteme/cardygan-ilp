@@ -1,6 +1,6 @@
 package org.cardygan.ilp.internal.expr.cnf;
 
-import org.cardygan.ilp.api.BinaryVar;
+import org.cardygan.ilp.api.model.BinaryVar;
 
 import java.util.HashMap;
 import java.util.List;

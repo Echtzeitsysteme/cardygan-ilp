@@ -1,7 +1,6 @@
-import org.cardygan.ilp.api.BinaryVar;
-import org.cardygan.ilp.api.Model;
-import org.cardygan.ilp.api.ModelContext;
-import org.cardygan.ilp.api.expr.bool.BoolExpr;
+import org.cardygan.ilp.api.model.BinaryVar;
+import org.cardygan.ilp.api.model.Model;
+import org.cardygan.ilp.api.model.bool.BoolExpr;
 import org.cardygan.ilp.internal.expr.cnf.CnfClause;
 import org.cardygan.ilp.internal.expr.cnf.TseytinTransformer;
 import org.junit.Before;
@@ -21,7 +20,7 @@ import static org.junit.Assert.assertThat;
 public class TseytinTransformerTest {
 
 
-    private static ModelContext model;
+    private static Model model;
     private static Map<String, BinaryVar> binVarCache;
 
     private static BinaryVar v(String name) {
@@ -34,7 +33,7 @@ public class TseytinTransformerTest {
     @Before
     public void setup() {
         binVarCache = new HashMap<>();
-        model = new ModelContext(new Model());
+        model = new Model();
     }
 
     @Test
@@ -127,9 +126,9 @@ public class TseytinTransformerTest {
         visitor.transform();
 
         List<BinaryVar> nonTmpVars = visitor.getVars().values().stream()
-                .filter(e -> !e.getName().startsWith(ModelContext.HELPING_VAR_PREFIX)).collect(Collectors.toList());
+                .filter(e -> !e.getName().startsWith(Model.VARIABLE_PREFIX)).collect(Collectors.toList());
 
-        List<BinaryVar> tmpVars = visitor.getVars().values().stream().filter(e -> e.getName().startsWith(ModelContext.HELPING_VAR_PREFIX))
+        List<BinaryVar> tmpVars = visitor.getVars().values().stream().filter(e -> e.getName().startsWith(Model.VARIABLE_PREFIX))
                 .collect(Collectors.toList());
 
         int n = nonTmpVars.size();

@@ -1,7 +1,8 @@
 package org.cardygan.ilp.model;
 
 import org.cardygan.ilp.api.*;
-import org.cardygan.ilp.api.expr.Var;
+import org.cardygan.ilp.api.model.*;
+import org.cardygan.ilp.api.solver.CplexSolver;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -24,13 +25,11 @@ public class CstrLangTest {
     public void basicAnd() {
         Model model = new Model();
 
-        Constraint cstr1 = model.newConstraint("name");
         IntVar v1 = model.newIntVar("v1");
         IntVar v2 = model.newIntVar("v2");
-        cstr1.setExpr(and(leq(v1, param(3)), geq(v2, param(2))));
+        model.newConstraint("name", and(leq(v1, param(3)), geq(v2, param(2))));
 
-        Objective obj = model.newObjective(true);
-        obj.setExpr(sum(v1));
+        model.newObjective(true, sum(v1));
 
         // test without M method
         Result res = model.solve(solver);
@@ -48,12 +47,11 @@ public class CstrLangTest {
     public void basicNot() {
         Model model = new Model();
 
-        Constraint cstr1 = model.newConstraint("name");
-        IntVar v1 = model.newIntVar("v1");
-        cstr1.setExpr(not(geq(v1, param(3))));
 
-        Objective obj = model.newObjective(true);
-        obj.setExpr(sum(v1));
+        IntVar v1 = model.newIntVar("v1");
+        model.newConstraint("name", not(geq(v1, param(3))));
+
+        model.newObjective(true, sum(v1));
 
 //        model.setM(1000);
         Result res = model.solve(solver);
@@ -71,12 +69,9 @@ public class CstrLangTest {
 
         IntVar f1 = model.newIntVar("f1");
 
-        Constraint cstr1 = model.newConstraint("cstr1");
-        cstr1.setExpr(eq(param(3), f1));
+        model.newConstraint("cstr1", eq(param(3), f1));
 
-
-        Objective obj = model.newObjective(true);
-        obj.setExpr(sum(f1));
+        model.newObjective(true, sum(f1));
 
         Result res = model.solve(solver);
 
@@ -92,14 +87,10 @@ public class CstrLangTest {
         IntVar f1 = model.newIntVar("f1");
         IntVar f2 = model.newIntVar("f2");
 
-        Constraint cstr1 = model.newConstraint("cstr1");
-        cstr1.setExpr(eq(f2, f1));
-        Constraint cstr2 = model.newConstraint("cstr2");
-        cstr2.setExpr(leq(f2, param(3)));
+        model.newConstraint("cstr1", eq(f2, f1));
+        model.newConstraint("cstr2", leq(f2, param(3)));
 
-
-        Objective obj = model.newObjective(true);
-        obj.setExpr(sum(f1));
+        model.newObjective(true, sum(f1));
 
         Result res = model.solve(solver);
 
@@ -115,12 +106,10 @@ public class CstrLangTest {
         IntVar f1 = model.newIntVar("f1");
         IntVar f2 = model.newIntVar("f2");
 
-        Constraint cstr1 = model.newConstraint("cstr1");
-        cstr1.setExpr(and(eq(f2, f1), leq(f2, param(3))));
+        model.newConstraint("cstr1", and(eq(f2, f1), leq(f2, param(3))));
 
 
-        Objective obj = model.newObjective(true);
-        obj.setExpr(sum(f1));
+        Objective obj = model.newObjective(true, sum(f1));
 
         Result res = model.solve(solver);
 
@@ -135,12 +124,10 @@ public class CstrLangTest {
         IntVar f1 = model.newIntVar("f1");
         IntVar f2 = model.newIntVar("f2");
 
-        Constraint cstr1 = model.newConstraint("cstr1");
-        cstr1.setExpr(and(eq(param(3), sum(f1, f2)), eq(f2, param(1))));
+        model.newConstraint("cstr1", and(eq(param(3), sum(f1, f2)), eq(f2, param(1))));
 
 
-        Objective obj = model.newObjective(true);
-        obj.setExpr(sum(f1));
+        model.newObjective(true, sum(f1));
 
         Result res = model.solve(solver);
 
@@ -156,13 +143,10 @@ public class CstrLangTest {
         IntVar f1 = model.newIntVar("f1");
         IntVar f2 = model.newIntVar("f2");
 
-        Constraint cstr1 = model.newConstraint("cstr1");
-        cstr1.setExpr(impl(eq(param(3), f1), eq(f2, param(11))));
-        Constraint cstr2 = model.newConstraint("cstr2");
-        cstr2.setExpr(eq(param(3), f1));
+        model.newConstraint("cstr1", impl(eq(param(3), f1), eq(f2, param(11))));
+        model.newConstraint("cstr2", eq(param(3), f1));
 
-        Objective obj = model.newObjective(true);
-        obj.setExpr(sum(f2));
+        Objective obj = model.newObjective(true, sum(f2));
 
         Result res = model.solve(solver);
 
@@ -181,16 +165,12 @@ public class CstrLangTest {
         IntVar f2 = model.newIntVar("f2");
         IntVar f3 = model.newIntVar("f3");
 
-        Constraint cstr1 = model.newConstraint("cstr1");
-        cstr1.setExpr(impl(and(eq(param(3), sum(f1, f2))),
+        model.newConstraint("cstr1", impl(and(eq(param(3), sum(f1, f2))),
                 eq(param(11), f3)));
-        Constraint cstr2 = model.newConstraint("cstr2");
-        cstr2.setExpr(eq(param(2), f1));
-        Constraint cstr3 = model.newConstraint("cstr2");
-        cstr3.setExpr(eq(param(1), f2));
+        model.newConstraint("cstr2", eq(param(2), f1));
+        model.newConstraint("cstr2", eq(param(1), f2));
 
-        Objective obj = model.newObjective(true);
-        obj.setExpr(sum(f3));
+        model.newObjective(true, sum(f3));
 
         Result res = model.solve(solver);
 
@@ -208,16 +188,12 @@ public class CstrLangTest {
         IntVar f2 = model.newIntVar("f2");
         IntVar f3 = model.newIntVar("f3");
 
-        Constraint cstr1 = model.newConstraint("cstr1");
-        cstr1.setExpr(impl(and(eq(param(2), f1), eq(param(1), f2)),
+        model.newConstraint("cstr1", impl(and(eq(param(2), f1), eq(param(1), f2)),
                 eq(param(11), f3)));
-        Constraint cstr2 = model.newConstraint("cstr2");
-        cstr2.setExpr(eq(param(2), f1));
-        Constraint cstr3 = model.newConstraint("cstr2");
-        cstr3.setExpr(eq(param(1), f2));
+        model.newConstraint("cstr2", eq(param(2), f1));
+        model.newConstraint("cstr2", eq(param(1), f2));
 
-        Objective obj = model.newObjective(true);
-        obj.setExpr(sum(f3));
+        model.newObjective(true, sum(f3));
 
         Result res = model.solve(solver);
 
@@ -234,18 +210,14 @@ public class CstrLangTest {
         IntVar f2 = model.newIntVar("f2");
         IntVar f3 = model.newIntVar("f3");
 
-        Constraint cstr1 = model.newConstraint("cstr1");
-        cstr1.setExpr(
+        Constraint cstr1 = model.newConstraint("cstr1",
                 impl(and(eq(param(3), sum(f1, f2)), eq(f1, param(1))),
                         eq(param(3), f3)));
 
-        Constraint cstr2 = model.newConstraint("cstr2");
-        cstr2.setExpr(eq(f1, param(1)));
-        Constraint cstr3 = model.newConstraint("cstr3");
-        cstr3.setExpr(eq(f2, param(2)));
+        model.newConstraint("cstr2", eq(f1, param(1)));
+        model.newConstraint("cstr3", eq(f2, param(2)));
 
-        Objective obj = model.newObjective(true);
-        obj.setExpr(sum(f3));
+        model.newObjective(true, sum(f3));
 
         Result res = model.solve(solver);
 
@@ -259,15 +231,13 @@ public class CstrLangTest {
         BinaryVar f0 = model.newBinaryVar("f0");
         Var w0 = model.newDoubleVar("w0");
 
-//        model.newConstraint("c1").setExpr(eq(p(1), f0));
-        model.newConstraint("c1").setExpr(impl(f0, eq(sum(w0), p(0.1))));
-        model.newConstraint("c2").setExpr(impl(not(f0), eq(p(0), w0)));
+        model.newConstraint("c1", impl(f0, eq(sum(w0), p(0.1))));
+        model.newConstraint("c2", impl(not(f0), eq(p(0), w0)));
 
-        model.newObjective(true).setExpr(w0);
+        model.newObjective(true, w0);
 
         Result res = model.solve(CplexSolver.create().build());
 
-//        assertEquals(new Double(3), res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
     }
 
@@ -278,12 +248,12 @@ public class CstrLangTest {
         IntVar f1 = model.newIntVar("f1", 0, 7);
         IntVar f2 = model.newIntVar("f2", 0, 8);
 
-        model.newConstraint("c1").setExpr(
+        model.newConstraint("c1",
                 impl(and(eq(p(3), sum(f0, f1)), eq(f0, p(1))), eq(f2, p(2)))
         );
 
 
-        model.newObjective(true).setExpr(f0);
+        model.newObjective(true, f0);
 
         Result res = model.solve(CplexSolver.create().build());
 
@@ -298,15 +268,15 @@ public class CstrLangTest {
         IntVar f2 = model.newIntVar("f2", 0, 8);
         IntVar f3 = model.newIntVar("f3");
 
-        model.newConstraint("c1").setExpr(
+        model.newConstraint("c1",
                 and(
                         impl(eq(p(3), f2), eq(f3, p(2))),
                         impl(not(eq(p(3), f2)), eq(f3, p(3)))
                 )
         );
-        model.newConstraint("c2").setExpr(eq(f2, p(3)));
+        model.newConstraint("c2", eq(f2, p(3)));
 
-        model.newObjective(true).setExpr(f0);
+        model.newObjective(true, f0);
 
         Result res = model.solve(CplexSolver.create().build());
 
@@ -326,25 +296,24 @@ public class CstrLangTest {
         IntVar v6 = model.newIntVar();
 
 
-        model.newConstraint("c1").setExpr(eq(v4, v1));
-        model.newConstraint("c2").setExpr(eq(v5, v3));
-        model.newConstraint("c3").setExpr(eq(v6, v3));
+        model.newConstraint("c1", eq(v4, v1));
+        model.newConstraint("c2", eq(v5, v3));
+        model.newConstraint("c3", eq(v6, v3));
 
-        model.newConstraint("c4").setExpr(
+        model.newConstraint("c4",
                 and(
                         impl(eq(v4, p(2)), eq(v5, p(3))),
                         impl(not(eq(v4, p(2))), eq(v6, p(1)))
                 )
         );
-        model.newConstraint("c5").setExpr(and(leq(p(1), v0), leq(v0, p(1))));
-        model.newConstraint("c6").setExpr(leq(mult(p(1), v0), sum(v1, v2, v3)));
-        model.newConstraint("c7").setExpr(and(leq(mult(p(1), v0), v1), leq(v1, mult(p(6), v0))));
-        model.newConstraint("c8").setExpr(and(leq(mult(p(1), v0), v2), leq(v2, mult(p(3), v0))));
-        model.newConstraint("c9").setExpr(and(leq(mult(p(1), v0), v3), leq(v3, mult(p(4), v0))));
+        model.newConstraint("c5", and(leq(p(1), v0), leq(v0, p(1))));
+        model.newConstraint("c6", leq(mult(p(1), v0), sum(v1, v2, v3)));
+        model.newConstraint("c7", and(leq(mult(p(1), v0), v1), leq(v1, mult(p(6), v0))));
+        model.newConstraint("c8", and(leq(mult(p(1), v0), v2), leq(v2, mult(p(3), v0))));
+        model.newConstraint("c9", and(leq(mult(p(1), v0), v3), leq(v3, mult(p(4), v0))));
 
 
-
-        model.newObjective(true).setExpr(v3);
+        model.newObjective(true, v3);
 
         Result res = model.solve(CplexSolver.create().build());
 
@@ -360,12 +329,12 @@ public class CstrLangTest {
         BinaryVar v0 = model.newBinaryVar();
         DoubleVar v1 = model.newDoubleVar();
 
-        model.newConstraint("c1").setExpr(eq(v0, p(1)));
-        model.newConstraint("c2").setExpr(impl(v0, leq(v1,p(5.303304908059076))));
-        model.newConstraint("c3").setExpr(impl(not(v0), eq(v1,p(0))));
-        model.newConstraint("c4").setExpr(eq(v1,p(0.6931471805599453)));
+        model.newConstraint("c1", eq(v0, p(1)));
+        model.newConstraint("c2", impl(v0, leq(v1, p(5.303304908059076))));
+        model.newConstraint("c3", impl(not(v0), eq(v1, p(0))));
+        model.newConstraint("c4", eq(v1, p(0.6931471805599453)));
 
-        model.newObjective(true).setExpr(v1);
+        model.newObjective(true, v1);
 
         Result res = model.solve(CplexSolver.create().build());
 

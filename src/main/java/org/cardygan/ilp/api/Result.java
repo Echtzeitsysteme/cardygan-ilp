@@ -1,6 +1,7 @@
 package org.cardygan.ilp.api;
 
-import org.cardygan.ilp.api.expr.Var;
+import org.cardygan.ilp.api.model.Model;
+import org.cardygan.ilp.api.model.Var;
 
 import java.util.Map;
 import java.util.Optional;

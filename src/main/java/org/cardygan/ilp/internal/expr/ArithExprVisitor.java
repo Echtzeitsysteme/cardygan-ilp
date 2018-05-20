@@ -1,6 +1,6 @@
 package org.cardygan.ilp.internal.expr;
 
-import org.cardygan.ilp.api.expr.*;
+import org.cardygan.ilp.api.model.*;
 
 public interface ArithExprVisitor<T> {
 

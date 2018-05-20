@@ -1,7 +1,7 @@
 package org.cardygan.ilp.api.util;
 
-import org.cardygan.ilp.api.expr.*;
-import org.cardygan.ilp.api.expr.bool.*;
+import org.cardygan.ilp.api.model.*;
+import org.cardygan.ilp.api.model.bool.*;
 
 import java.util.List;
 
