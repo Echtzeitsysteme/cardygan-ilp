@@ -1,7 +1,10 @@
 package org.cardygan.ilp.model;
 
 import org.cardygan.ilp.api.Result;
-import org.cardygan.ilp.api.model.*;
+import org.cardygan.ilp.api.model.Constraint;
+import org.cardygan.ilp.api.model.IntVar;
+import org.cardygan.ilp.api.model.Model;
+import org.cardygan.ilp.api.model.Objective;
 import org.cardygan.ilp.api.solver.ChocoSolver;
 import org.cardygan.ilp.api.solver.CplexSolver;
 import org.cardygan.ilp.api.solver.GurobiSolver;
