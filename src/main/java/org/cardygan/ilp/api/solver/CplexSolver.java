@@ -5,36 +5,33 @@ import ilog.concert.IloIntVar;
 import ilog.concert.IloNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
-import org.cardygan.ilp.api.model.Model;
 import org.cardygan.ilp.api.Result;
+import org.cardygan.ilp.api.model.Model;
 import org.cardygan.ilp.api.model.Var;
 import org.cardygan.ilp.internal.expr.Coefficient;
-import org.cardygan.ilp.internal.expr.*;
 import org.cardygan.ilp.internal.expr.model.*;
 import org.cardygan.ilp.internal.util.IlpUtil;
+import org.cardygan.ilp.internal.util.LibraryUtil;
 import org.cardygan.ilp.internal.util.SolverUtil;
-import org.cardygan.ilp.internal.util.Util;
 
-import java.lang.reflect.Field;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
-
-import static org.cardygan.ilp.api.util.ExprDsl.p;
+import java.util.Set;
 
 public class CplexSolver implements Solver {
 
     private final static String ENV_VAR_CPLEX_LIB_PATH = "CPLEX_LIB_PATH";
-    private final Optional<String> modelOutputFilePath;
-    private final Optional<Integer> seed;
+    private final String modelOutputFilePath;
+    private final Integer seed;
     private final boolean logging;
     private final boolean preSolve;
     private final int threadCount;
     private final int parallelMode;
     private Map<Var, IloIntVar> vars;
     private Map<Var, IloNumVar> numVars;
-    private Map<Var, Double> solutions;
-    private final Optional<Long> timeout;
+    private final Long timeout;
 
     public CplexSolver() {
         this(new CplexSolverBuilder());
@@ -45,7 +42,7 @@ public class CplexSolver implements Solver {
         if (libraryPath == null) {
             throw new IllegalStateException("Could not read Cplex library path. Environment variable " + ENV_VAR_CPLEX_LIB_PATH + " not set.");
         }
-        loadLibraryFromPath(libraryPath);
+        LibraryUtil.loadLibraryFromPath(libraryPath);
 
         this.seed = builder.seed;
         this.modelOutputFilePath = builder.modelOutputFilePath;
@@ -60,17 +57,6 @@ public class CplexSolver implements Solver {
         return new CplexSolverBuilder();
     }
 
-    private void loadLibraryFromPath(String cplexLibraryPath) {
-        try {
-            System.setProperty("java.library.path", cplexLibraryPath);
-            Field fieldSysPath = ClassLoader.class.getDeclaredField("sys_paths");
-            fieldSysPath.setAccessible(true);
-            fieldSysPath.set(null, null);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            System.err.println("Could not load cplex library from path " + cplexLibraryPath);
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public Result solve(Model model) {
@@ -90,8 +76,8 @@ public class CplexSolver implements Solver {
                 cplex.setOut(null);
             }
 
-            if (timeout.isPresent()) {
-                cplex.setParam(IloCplex.Param.TimeLimit, timeout.get());
+            if (timeout != null) {
+                cplex.setParam(IloCplex.Param.TimeLimit, timeout);
             }
 
             // Create vars
@@ -133,32 +119,38 @@ public class CplexSolver implements Solver {
             // create sos1 constraints
             constructSos1Constraints(cplex, basicModel.getSos1());
 
+            // Create objective
+            if (basicModel.getObjective().isPresent()) {
+                List<Coefficient> coefficients = basicModel.getObjective().get().getCoefficients();
+                double constant = basicModel.getObjective().get().getConstant();
 
-//            List<Coefficient> coefficients = simplifier.getSummands().stream().map(p -> Util.coef(p(p.getFirst()), p.getSecond())).collect(Collectors.toList());
-            List<Coefficient> coefficients = basicModel.getObjective().getCoefficients();
-            double constant = basicModel.getObjective().getConstant();
-
-            if (model.getObjective().isMax()) {
-                cplex.addMaximize(createObjectiveTerms(cplex, coefficients, constant));
-            } else {
-                cplex.addMinimize(createObjectiveTerms(cplex, coefficients, constant));
+                if (basicModel.getObjective().get().isMax()) {
+                    cplex.addMaximize(createObjectiveTerms(cplex, coefficients, constant));
+                } else {
+                    cplex.addMinimize(createObjectiveTerms(cplex, coefficients, constant));
+                }
             }
 
-            // deactivate presolve to prevent "UnounbdedOrInfeasible" status
+            // deactivate pre-solve to prevent "UnounbdedOrInfeasible" status
             cplex.setParam(IloCplex.BooleanParam.PreInd, preSolve);
 
             cplex.setParam(IloCplex.IntParam.ParallelMode, parallelMode);
             cplex.setParam(IloCplex.Param.Threads, threadCount);
 
+
+            if (seed != null) {
+                cplex.setParam(IloCplex.Param.RandomSeed, seed);
+            }
+
             final long start = System.currentTimeMillis();
             boolean succ = cplex.solve();
             final long end = System.currentTimeMillis();
 
-            if (modelOutputFilePath.isPresent()) {
-                cplex.exportModel(modelOutputFilePath.get());
+            if (modelOutputFilePath != null) {
+                cplex.exportModel(modelOutputFilePath);
             }
 
-            solutions = new HashMap<>();
+            Map<Var, Double> solutions = new HashMap<>();
             if (succ) {
                 for (Entry<Var, IloIntVar> entry : vars.entrySet()) {
                     try {
@@ -184,15 +176,12 @@ public class CplexSolver implements Solver {
                 }
             }
 
-            if (seed.isPresent()) {
-                cplex.setParam(IloCplex.Param.RandomSeed, seed.get());
-            }
 
-            final Optional<Double> objVal;
+            final Double objVal;
             if (succ) {
-                objVal = Optional.of(cplex.getObjValue());
+                objVal = cplex.getObjValue();
             } else {
-                objVal = Optional.empty();
+                objVal = null;
             }
 
             final Result res = new Result(model, new Result.Statistics(succ, cplex.getStatus() == IloCplex.Status.Unbounded, end - start),
@@ -230,7 +219,6 @@ public class CplexSolver implements Solver {
     }
 
     private void constructSos1Constraints(IloCplex model, List<Set<Var>> sets) throws IloException {
-        double d = 1;
         for (Set<Var> sos : sets) {
             double[] weights = new double[sos.size()];
             for (int i = 0; i < sos.size(); i++) {
@@ -296,22 +284,21 @@ public class CplexSolver implements Solver {
         public final static int CPX_PARALLEL_AUTO = 0;
         public final static int CPX_PARALLEL_DETERMINISTIC = 1;
 
-        String cplexLibraryPath;
-        Optional<String> modelOutputFilePath = Optional.empty();
-        Optional<Integer> seed = Optional.empty();
-        int parallelMode = CPX_PARALLEL_AUTO;
-        int threadCount = 0;
-        boolean presolve = false;
-        Optional<Long> timeout = Optional.empty();
-
-        boolean logging = false;
+        private String cplexLibraryPath;
+        private String modelOutputFilePath = null;
+        private Integer seed = null;
+        private int parallelMode = CPX_PARALLEL_AUTO;
+        private int threadCount = 0;
+        private boolean presolve = true;
+        private Long timeout = null;
+        private boolean logging = false;
 
         private CplexSolverBuilder() {
             this.cplexLibraryPath = System.getenv(ENV_VAR_CPLEX_LIB_PATH);
         }
 
         public CplexSolverBuilder withSeed(int seed) {
-            this.seed = Optional.of(seed);
+            this.seed = seed;
             return this;
         }
 
@@ -322,7 +309,7 @@ public class CplexSolver implements Solver {
          * @return
          */
         public CplexSolverBuilder withTimeOut(long timeout) {
-            this.timeout = Optional.of(timeout);
+            this.timeout = timeout;
             return this;
         }
 
@@ -342,7 +329,7 @@ public class CplexSolver implements Solver {
         }
 
         public CplexSolverBuilder withModelOutput(String absoluteFilePath) {
-            this.modelOutputFilePath = Optional.of(absoluteFilePath);
+            this.modelOutputFilePath = absoluteFilePath;
             return this;
         }
 

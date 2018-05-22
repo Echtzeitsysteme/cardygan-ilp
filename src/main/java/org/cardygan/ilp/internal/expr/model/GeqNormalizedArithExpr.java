@@ -5,7 +5,6 @@ import org.cardygan.ilp.api.model.bool.RelOp;
 import org.cardygan.ilp.internal.expr.Coefficient;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Created by markus on 24.10.16.

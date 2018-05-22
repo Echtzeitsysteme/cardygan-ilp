@@ -10,10 +10,10 @@ public class Result {
 
     private final Statistics statistics;
     private final Map<Var, Double> solutions;
-    private final Optional<Double> objVal;
+    private final Double objVal;
     private final Model model;
 
-    public Result(Model model, Statistics statistics, Map<Var, Double> solutions, Optional<Double> objVal) {
+    public Result(Model model, Statistics statistics, Map<Var, Double> solutions, Double objVal) {
         this.model = model;
         this.statistics = statistics;
         this.solutions = solutions;
@@ -29,12 +29,12 @@ public class Result {
     }
 
     public Optional<Double> getObjVal() {
-        return objVal;
+        return Optional.ofNullable(objVal);
     }
 
     @Override
     public String toString() {
-        return "feasible: " + statistics.feasible + ", unbounded: " + statistics.unbounded + (objVal.isPresent() ? ", objVal: " + objVal : "") + ", duration " + statistics.getDuration()+"ms";
+        return "feasible: " + statistics.feasible + ", unbounded: " + statistics.unbounded + (objVal != null ? ", objVal: " + objVal : "") + ", duration " + statistics.getDuration() + "ms";
     }
 
     public Model getModel() {

@@ -1,7 +1,6 @@
 package org.cardygan.ilp.internal.expr;
 
 
-import org.cardygan.ilp.api.model.Var;
 import org.cardygan.ilp.api.model.*;
 import org.cardygan.ilp.internal.util.Pair;
 import org.cardygan.ilp.internal.util.Util;

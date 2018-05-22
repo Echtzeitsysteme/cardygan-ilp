@@ -21,6 +21,10 @@ public final class Util {
         return arg;
     }
 
+    public static boolean isInteger(double val) {
+        return val == (int) val;
+    }
+
 
     public static void assertNotNull(Object... objs) {
         for (Object o : objs) {

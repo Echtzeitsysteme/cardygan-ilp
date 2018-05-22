@@ -1,6 +1,5 @@
 package org.cardygan.ilp.internal.expr;
 
-import org.cardygan.ilp.api.model.BinaryVar;
 import org.cardygan.ilp.api.model.*;
 import org.cardygan.ilp.api.model.bool.*;
 

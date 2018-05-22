@@ -1,10 +1,17 @@
 package org.cardygan.ilp.model;
 
-import org.cardygan.ilp.api.*;
+import org.cardygan.ilp.api.Result;
 import org.cardygan.ilp.api.model.*;
+import org.cardygan.ilp.api.solver.ChocoSolver;
 import org.cardygan.ilp.api.solver.CplexSolver;
-import org.junit.Before;
+import org.cardygan.ilp.api.solver.GurobiSolver;
+import org.cardygan.ilp.api.solver.Solver;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 import static org.cardygan.ilp.api.util.ExprDsl.*;
 import static org.junit.Assert.*;
@@ -12,13 +19,25 @@ import static org.junit.Assert.*;
 /**
  * Created by markus on 18.02.17.
  */
-public class CstrLangTest {
+@RunWith(Parameterized.class)
+public class IntCstrLangTest {
 
-    CplexSolver solver;
+    @Parameterized.Parameters
+    public static Collection<Object[]> data() {
+        return Arrays.asList(
+                new Solver[]{new GurobiSolver()},
+                new Solver[]{new CplexSolver()},
+                new Solver[]{new ChocoSolver.ChocoSolverBuilder()
+                        .withObjectiveBounds(-99999, 99999)
+                        .withDefaultIntVarBounds(0, 99999)
+                        .build()});
+    }
 
-    @Before
-    public void init() {
-        solver = new CplexSolver();
+
+    private Solver solver;
+
+    public IntCstrLangTest(Solver solver) {
+        this.solver = solver;
     }
 
     @Test
@@ -225,21 +244,6 @@ public class CstrLangTest {
         assertTrue(res.getStatistics().isFeasible());
     }
 
-    @Test
-    public void complexImplication() {
-        Model model = new Model();
-        BinaryVar f0 = model.newBinaryVar("f0");
-        Var w0 = model.newDoubleVar("w0");
-
-        model.newConstraint("c1", impl(f0, eq(sum(w0), p(0.1))));
-        model.newConstraint("c2", impl(not(f0), eq(p(0), w0)));
-
-        model.newObjective(true, w0);
-
-        Result res = model.solve(CplexSolver.create().build());
-
-        assertTrue(res.getStatistics().isFeasible());
-    }
 
     @Test
     public void testModel1() {
@@ -255,7 +259,7 @@ public class CstrLangTest {
 
         model.newObjective(true, f0);
 
-        Result res = model.solve(CplexSolver.create().build());
+        Result res = model.solve(solver);
 
         assertTrue(5d == res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
@@ -278,7 +282,7 @@ public class CstrLangTest {
 
         model.newObjective(true, f0);
 
-        Result res = model.solve(CplexSolver.create().build());
+        Result res = model.solve(solver);
 
         assertTrue(res.getStatistics().isFeasible());
         assertEquals(new Double(2d), res.getSolutions().get(f3));
@@ -315,32 +319,11 @@ public class CstrLangTest {
 
         model.newObjective(true, v3);
 
-        Result res = model.solve(CplexSolver.create().build());
+        Result res = model.solve(solver);
 
         assertTrue(res.getStatistics().isFeasible());
 
         assertEquals(new Double(3d), res.getSolutions().get(v3));
-    }
-
-    @Test
-    public void testModel4() {
-        Model model = new Model();
-
-        BinaryVar v0 = model.newBinaryVar();
-        DoubleVar v1 = model.newDoubleVar();
-
-        model.newConstraint("c1", eq(v0, p(1)));
-        model.newConstraint("c2", impl(v0, leq(v1, p(5.303304908059076))));
-        model.newConstraint("c3", impl(not(v0), eq(v1, p(0))));
-        model.newConstraint("c4", eq(v1, p(0.6931471805599453)));
-
-        model.newObjective(true, v1);
-
-        Result res = model.solve(CplexSolver.create().build());
-
-        assertTrue(res.getStatistics().isFeasible());
-
-        assertEquals(new Double(0.6931471805599453), res.getSolutions().get(v1));
     }
 
 }

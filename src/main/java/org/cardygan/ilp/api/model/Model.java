@@ -4,7 +4,6 @@ import org.cardygan.ilp.api.Result;
 import org.cardygan.ilp.api.model.bool.BoolExpr;
 import org.cardygan.ilp.api.model.bool.RelOp;
 import org.cardygan.ilp.api.solver.Solver;
-import org.cardygan.ilp.internal.expr.ProxyResolver;
 
 import java.util.*;
 
@@ -48,8 +47,8 @@ public class Model {
         return Collections.unmodifiableMap(vars);
     }
 
-    public Objective getObjective() {
-        return objective;
+    public Optional<Objective> getObjective() {
+        return Optional.ofNullable(objective);
     }
 
     public List<Set<Var>> getSos1() {
@@ -226,15 +225,10 @@ public class Model {
     }
 
     public Result solve(Solver solver) {
-        if (objective == null) {
-            // add dummy empty objective
-            newObjective(true, new Sum());
-        }
-
-        ProxyResolver resolver = new ProxyResolver(this, solver);
-        resolver.resolve();
-//
-//        ctx.preProcessConstraints();
+//        if (objective == null) {
+//            // add dummy empty objective
+//            newObjective(true, new Sum());
+//        }
 
         return solver.solve(this);
     }

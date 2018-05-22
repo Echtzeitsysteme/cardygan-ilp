@@ -1,8 +1,8 @@
 package org.cardygan.ilp.internal.expr.cnf;
 
+import org.cardygan.ilp.api.model.BinaryVar;
 import org.cardygan.ilp.api.model.Model;
 import org.cardygan.ilp.api.model.bool.*;
-import org.cardygan.ilp.api.model.BinaryVar;
 import org.cardygan.ilp.internal.expr.BoolExprVisitor;
 
 import java.util.*;

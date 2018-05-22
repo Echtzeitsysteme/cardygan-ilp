@@ -9,11 +9,9 @@ import org.cardygan.ilp.internal.expr.Coefficient;
 import org.cardygan.ilp.internal.expr.cnf.CnfClause;
 import org.cardygan.ilp.internal.expr.cnf.TseytinTransformer;
 import org.cardygan.ilp.internal.util.Pair;
-import org.cardygan.ilp.internal.util.RandomString;
 import org.cardygan.ilp.internal.util.Util;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -58,11 +56,22 @@ public class IlpToBasicConverter {
                 );
 
         // process objective
-        BasicObjective basicObjective = processObjective(copiedModel.getObjective());
+        final BasicObjective basicObjective;
+        if (copiedModel.getObjective().isPresent())
+            basicObjective = processObjective(copiedModel.getObjective().get());
+        else
+            basicObjective = null;
 
-        return new BasicModel(normalizedArithConstraints,
+        if (copiedModel.getM().isPresent())
+            return new BasicModel(normalizedArithConstraints,
+                    basicObjective,
+                    copiedModel.getM().get(),
+                    copiedModel.getVars(),
+                    copiedModel.getBounds(),
+                    copiedModel.getSos1()
+            );
+        else return new BasicModel(normalizedArithConstraints,
                 basicObjective,
-                copiedModel.getM(),
                 copiedModel.getVars(),
                 copiedModel.getBounds(),
                 copiedModel.getSos1()
