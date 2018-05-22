@@ -72,14 +72,9 @@ public class IntCstrLangTest {
 
         model.newObjective(true, sum(v1));
 
-//        model.setM(1000);
         Result res = model.solve(solver);
         assertEquals(new Double(2), res.getObjVal().get());
         assertTrue(res.getStatistics().isFeasible());
-
-//        model.setM(Optional.empty());
-//        res = model.solve(solver);
-//        assertEquals(new Double(2), res.getObjVal().get());
     }
 
     @Test

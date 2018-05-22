@@ -27,12 +27,15 @@ public class ChocoSolver implements Solver {
     private final Integer objUb;
     private final Integer intVarLb;
     private final Integer intVarUb;
+    private final Long timeout;
 
     public ChocoSolver(ChocoSolverBuilder builder) {
+
         this.objLb = builder.objLb;
         this.objUb = builder.objUb;
         this.intVarLb = builder.intVarLb;
         this.intVarUb = builder.intVarUb;
+        this.timeout = builder.timeout;
     }
 
     @Override
@@ -84,6 +87,9 @@ public class ChocoSolver implements Solver {
         final Double objVal;
         final Solution solution;
         final org.chocosolver.solver.Solver chocoSolver = chocoModel.getSolver();
+
+        if (timeout != null)
+            chocoSolver.limitTime(timeout * 1000);
 
         // Solve with objective
         if (model.getObjective().isPresent()) {
