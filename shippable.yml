@@ -9,7 +9,7 @@ env:
 build:
   ci:
   - mkdir tmp
-  - cp ext_lib/solver.zip.gpg tmp
+  - cp ext_lib/solver.tar.gpg tmp
   - cd tmp
   - gpg --output solver.tar --yes --batch --decrypt --passphrase $UNZIP solver.tar.gpg
   - tar -xvf solver.tar
