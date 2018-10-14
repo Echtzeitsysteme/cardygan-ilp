@@ -9,6 +9,7 @@ import org.cardygan.ilp.api.solver.ChocoSolver;
 import org.cardygan.ilp.api.solver.CplexSolver;
 import org.cardygan.ilp.api.solver.GurobiSolver;
 import org.cardygan.ilp.api.solver.Solver;
+import org.cardygan.ilp.internal.util.IlpUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -316,6 +317,10 @@ public class IntCstrLangTest {
 
 
         model.newObjective(true, v3);
+
+//        String json = IlpUtil.persistToJson(model);
+//        model = IlpUtil.readFromJson(json);
+//        System.out.println(json);
 
         Result res = model.solve(solver);
 

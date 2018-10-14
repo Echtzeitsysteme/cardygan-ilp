@@ -46,12 +46,17 @@ public class Result {
         private final boolean feasible;
         private final boolean unbounded;
         private final long duration;
+        private final int colsRemovedByPresolve;
+        private final int rowsRemovedByPresolve;
 
 
-        public Statistics(boolean feasible, boolean unbounded, long duration) {
+        public Statistics(boolean feasible, boolean unbounded, long duration,
+                          int colsRemovedByPresolve, int rowsRemovedByPresolve) {
             this.feasible = feasible;
             this.unbounded = unbounded;
             this.duration = duration;
+            this.colsRemovedByPresolve = colsRemovedByPresolve;
+            this.rowsRemovedByPresolve = rowsRemovedByPresolve;
         }
 
         public boolean isFeasible() {
@@ -66,7 +71,23 @@ public class Result {
             return duration;
         }
 
+        /**
+         * Get number of rows removed by pre-solving or -1 if now statistics were collected.
+         *
+         * @return the number of rows removed by pre-solving
+         */
+        public int getNumColsRemovedAfterPresolve() {
+            return colsRemovedByPresolve;
+        }
 
+        /**
+         * Get number of columns removed by pre-solving or -1 if now statistics were collected.
+         *
+         * @return the number of columns removed by pre-solving
+         */
+        public int getNumRowsRemovedAfterPresolve() {
+            return rowsRemovedByPresolve;
+        }
     }
 
 }

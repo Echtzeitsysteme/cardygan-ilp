@@ -25,10 +25,9 @@ public class DoubleCstrLangTest {
     @Parameterized.Parameters
     public static Collection<Object[]> data() {
         return Arrays.asList(
-                new Solver[]{new GurobiSolver()},
-                new Solver[]{new CplexSolver()});
+                new Solver[]{GurobiSolver.create().build()},
+                new Solver[]{CplexSolver.create().build()});
     }
-
 
     private Solver solver;
 
@@ -47,6 +46,7 @@ public class DoubleCstrLangTest {
         model.newConstraint("c2", impl(not(f0), eq(p(0), w0)));
 
         model.newObjective(true, w0);
+
 
         Result res = model.solve(solver);
 

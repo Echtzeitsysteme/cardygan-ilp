@@ -1,1 +1,2 @@
 cplexJarPath=/Users/users1/Applications/IBM/ILOG/CPLEX_Studio1263/cplex/lib/cplex.jar
+gurobiJarPath=/Library/gurobi800/mac64/lib/gurobi.jar

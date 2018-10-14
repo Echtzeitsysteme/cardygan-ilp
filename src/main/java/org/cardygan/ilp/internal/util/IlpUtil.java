@@ -1,9 +1,15 @@
 package org.cardygan.ilp.internal.util;
 
-import org.cardygan.ilp.api.model.BinaryVar;
-import org.cardygan.ilp.api.model.DoubleVar;
-import org.cardygan.ilp.api.model.IntVar;
-import org.cardygan.ilp.api.model.Var;
+import com.google.gson.*;
+import org.cardygan.ilp.api.model.*;
+import org.cardygan.ilp.api.model.bool.And;
+import org.cardygan.ilp.api.model.bool.BiImpl;
+import org.cardygan.ilp.api.model.bool.BoolExpr;
+
+import java.io.File;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class IlpUtil {
 
@@ -20,4 +26,6 @@ public final class IlpUtil {
     public static boolean isDoubleVar(Var var) {
         return var instanceof DoubleVar;
     }
+
+
 }

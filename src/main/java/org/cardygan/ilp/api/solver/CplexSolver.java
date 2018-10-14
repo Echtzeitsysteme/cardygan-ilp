@@ -142,6 +142,28 @@ public class CplexSolver implements Solver {
                 cplex.setParam(IloCplex.Param.RandomSeed, seed);
             }
 
+            class PresolveCallback extends IloCplex.PresolveCallback {
+
+                private int rowsRemovedByPresolve = 0;
+                private int colsRemovedByPresolve = 0;
+
+                @Override
+                protected void main() throws IloException {
+                    colsRemovedByPresolve = Math.max(getNremovedCols(), colsRemovedByPresolve);
+                    rowsRemovedByPresolve = Math.max(getNremovedRows(), rowsRemovedByPresolve);
+                }
+            }
+
+            PresolveCallback callback = null;
+            int rowsRemovedByPresolve = 0;
+            int colsRemovedByPresolve = 0;
+
+            if (preSolve) {
+
+
+                callback = new PresolveCallback();
+                cplex.use(callback);
+            }
             final long start = System.currentTimeMillis();
             boolean succ = cplex.solve();
             final long end = System.currentTimeMillis();
@@ -184,7 +206,12 @@ public class CplexSolver implements Solver {
                 objVal = null;
             }
 
-            final Result res = new Result(model, new Result.Statistics(succ, cplex.getStatus() == IloCplex.Status.Unbounded, end - start),
+            if (callback != null) {
+                rowsRemovedByPresolve = callback.rowsRemovedByPresolve;
+                colsRemovedByPresolve = callback.colsRemovedByPresolve;
+            }
+
+            final Result res = new Result(model, new Result.Statistics(succ, cplex.getStatus() == IloCplex.Status.Unbounded, end - start, colsRemovedByPresolve, rowsRemovedByPresolve),
                     solutions, objVal);
 
             cplex.end();
@@ -315,6 +342,11 @@ public class CplexSolver implements Solver {
 
         public CplexSolverBuilder withPresolve() {
             this.presolve = true;
+            return this;
+        }
+
+        public CplexSolverBuilder withPresolve(boolean presolve) {
+            this.presolve = presolve;
             return this;
         }
 

@@ -17,8 +17,10 @@ import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class ChocoSolver implements Solver {
 
@@ -129,7 +131,7 @@ public class ChocoSolver implements Solver {
             }
         }
 
-        Result.Statistics stats = new Result.Statistics(solution != null, false, end - start);
+        Result.Statistics stats = new Result.Statistics(solution != null, false, end - start, -1, -1);
         return new Result(model, stats, solutions, objVal);
     }
 
@@ -214,7 +216,16 @@ public class ChocoSolver implements Solver {
 
     private ArExpression convertArithExpr(ArithExpr arithExpr, org.chocosolver.solver.Model model) {
         ArithExprSimplifier simpleExpr = new ArithExprSimplifier(arithExpr);
-        Optional<ArExpression> sum = simpleExpr.getSummands().stream().map(
+//        Optional<ArExpression> sum = simpleExpr.getSummands().stream().map(
+//                e -> {
+//                    int param = tryCastToInt(e.getFirst());
+//                    if (param == 1)
+//                        return vars.get(e.getSecond());
+//                    else
+//                        return vars.get(e.getSecond()).mul(param);
+//                }
+//        ).reduce(ArExpression::add);
+        List<ArExpression> sumList = simpleExpr.getSummands().stream().map(
                 e -> {
                     int param = tryCastToInt(e.getFirst());
                     if (param == 1)
@@ -222,7 +233,14 @@ public class ChocoSolver implements Solver {
                     else
                         return vars.get(e.getSecond()).mul(param);
                 }
-        ).reduce(ArExpression::add);
+        ).collect(Collectors.toList());
+
+        Optional<ArExpression> sum = Optional.empty();
+        if (sumList.size() > 1) {
+            sum = Optional.of(sumList.get(0).add(sumList.toArray(new ArExpression[0])));
+        } else if (sumList.size() == 1) {
+            sum = Optional.of(sumList.get(0));
+        }
 
         int constant = tryCastToInt(simpleExpr.getConstant());
 

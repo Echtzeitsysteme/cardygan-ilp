@@ -23,6 +23,7 @@ public class GurobiSolver implements Solver {
     private final boolean logging;
     private Map<Var, GRBVar> vars;
     private final Long timeout;
+    private final boolean withPresolve;
 
     public GurobiSolver() {
         this(new GurobiSolverBuilder());
@@ -31,6 +32,7 @@ public class GurobiSolver implements Solver {
     private GurobiSolver(GurobiSolverBuilder builder) {
         this.seed = builder.seed;
         this.libraryPath = builder.libraryPath;
+        this.withPresolve = builder.withPresolve;
 
         if (libraryPath != null)
             LibraryUtil.loadLibraryFromPath(libraryPath);
@@ -124,6 +126,28 @@ public class GurobiSolver implements Solver {
             } else {
                 obj = null;
             }
+            grbModel.update();
+
+            class PresolveCallback extends GRBCallback {
+                private int rowsRemovedByPresolve = 0;
+                private int colsRemovedByPresolve = 0;
+
+                @Override
+                protected void callback() {
+                    try {
+                        if (where == GRB.CB_PRESOLVE) {
+
+                            colsRemovedByPresolve = getIntInfo(GRB.CB_PRE_COLDEL);
+                            rowsRemovedByPresolve = getIntInfo(GRB.CB_PRE_ROWDEL);
+                        }
+                    } catch (GRBException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            PresolveCallback presolveCallback = new PresolveCallback();
+            grbModel.setCallback(presolveCallback);
+
 
             final long start = System.currentTimeMillis();
             grbModel.optimize();
@@ -152,8 +176,8 @@ public class GurobiSolver implements Solver {
                 objVal = null;
             }
 
-            final Result res = new Result(model, new Result.Statistics(succ, unbounded, end - start),
-                    solutions, objVal);
+            final Result.Statistics stats = new Result.Statistics(succ, unbounded, end - start, presolveCallback.colsRemovedByPresolve, presolveCallback.rowsRemovedByPresolve);
+            final Result res = new Result(model, stats, solutions, objVal);
 
             grbModel.dispose();
             env.dispose();
@@ -230,6 +254,7 @@ public class GurobiSolver implements Solver {
         private Long timeout = null;
         private boolean logging = false;
         private String modelOutputFilePath = null;
+        private boolean withPresolve = true;
 
         private GurobiSolverBuilder() {
         }
@@ -257,6 +282,11 @@ public class GurobiSolver implements Solver {
 
         public GurobiSolverBuilder withLibPath(String libraryPath) {
             this.libraryPath = libraryPath;
+            return this;
+        }
+
+        public GurobiSolverBuilder withPresolve(boolean withPresolve) {
+            this.withPresolve = withPresolve;
             return this;
         }
 

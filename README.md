@@ -8,6 +8,7 @@ We use gradle for building the project (https://gradle.org). Take the following 
 2. As content of `gradle.properties` add the following line and adapt the path according to your local setup:
 ```
 cplexJarPath=/Users/users1/Applications/IBM/ILOG/CPLEX_Studio1263/cplex/lib/cplex.jar
+gurobiJarPath=/Library/gurobi800/mac64/lib/gurobi.jar
 ```
 3. In the project root execute the command `gradle jar` from the command line to build the library.
 
