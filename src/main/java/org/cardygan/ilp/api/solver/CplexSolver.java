@@ -86,14 +86,20 @@ public class CplexSolver implements Solver {
                 if (IlpUtil.isBinaryVar(var)) {
                     vars.put(var, cplex.boolVar(var.getName()));
                 } else if (IlpUtil.isIntVar(var)) {
-                    int lb = 0;
+                    int lb = -Integer.MAX_VALUE;
                     int ub = Integer.MAX_VALUE;
 
                     if (basicModel.getBounds(var) != null) {
                         Model.Bounds bounds = basicModel.getBounds(var);
                         lb = new Double(bounds.getLb()).intValue();
-                        ub = new Double(bounds.getUb()).intValue();
+
+                        int newUb = new Double(bounds.getUb()).intValue();
+                        if (newUb >= 0)
+                            ub = newUb;
                     }
+
+                    if (lb > ub)
+                        throw new IllegalArgumentException("Lower bound of variable " + var + "needs to be less than upper bound.");
 
                     vars.put(var, cplex.intVar(lb, ub, var.getName()));
                 } else if (IlpUtil.isDoubleVar(var)) {
@@ -103,8 +109,13 @@ public class CplexSolver implements Solver {
                     if (basicModel.getBounds(var) != null) {
                         Model.Bounds bounds = basicModel.getBounds(var);
                         lb = bounds.getLb();
-                        ub = bounds.getUb();
+                        double newUb = bounds.getUb();
+                        if (newUb >= 0)
+                            ub = newUb;
                     }
+
+                    if (lb > ub)
+                        throw new IllegalArgumentException("Lower bound of variable " + var + "needs to be less than upper bound.");
 
                     numVars.put(var, cplex.numVar(lb, ub, var.getName()));
 
@@ -211,7 +222,20 @@ public class CplexSolver implements Solver {
                 colsRemovedByPresolve = callback.colsRemovedByPresolve;
             }
 
-            final Result res = new Result(model, new Result.Statistics(succ, cplex.getStatus() == IloCplex.Status.Unbounded, end - start, colsRemovedByPresolve, rowsRemovedByPresolve),
+            Result.SolverStatus status;
+            if (cplex.getStatus() == IloCplex.Status.Unbounded) {
+                status = Result.SolverStatus.UNBOUNDED;
+            } else if (cplex.getStatus() == IloCplex.Status.InfeasibleOrUnbounded) {
+                status = Result.SolverStatus.INF_OR_UNBD;
+            } else if (cplex.getStatus() == IloCplex.Status.Infeasible) {
+                status = Result.SolverStatus.INFEASIBLE;
+            } else if (cplex.getStatus() == IloCplex.Status.Optimal) {
+                status = Result.SolverStatus.OPTIMAL;
+            } else {
+                throw new RuntimeException("Unknown solver status.");
+            }
+
+            final Result res = new Result(model, new Result.Statistics(status, end - start, colsRemovedByPresolve, rowsRemovedByPresolve),
                     solutions, objVal);
 
             cplex.end();

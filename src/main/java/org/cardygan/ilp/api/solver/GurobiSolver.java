@@ -86,8 +86,14 @@ public class GurobiSolver implements Solver {
                     if (basicModel.getBounds(var) != null) {
                         Model.Bounds bounds = basicModel.getBounds(var);
                         lb = new Double(bounds.getLb()).intValue();
-                        ub = new Double(bounds.getUb()).intValue();
+
+                        int newUb = new Double(bounds.getUb()).intValue();
+                        if (newUb >= 0)
+                            ub = newUb;
                     }
+
+                    if (lb > ub)
+                        throw new IllegalArgumentException("Lower bound of variable " + var + "needs to be less than upper bound.");
 
                     GRBVar grbVar = grbModel.addVar(lb, ub, 0.0, GRB.INTEGER, var.getName());
                     vars.put(var, grbVar);
@@ -98,8 +104,14 @@ public class GurobiSolver implements Solver {
                     if (basicModel.getBounds(var) != null) {
                         Model.Bounds bounds = basicModel.getBounds(var);
                         lb = new Double(bounds.getLb()).intValue();
-                        ub = new Double(bounds.getUb()).intValue();
+
+                        double newUb = bounds.getUb();
+                        if (newUb >= 0)
+                            ub = newUb;
                     }
+
+                    if (lb > ub)
+                        throw new IllegalArgumentException("Lower bound of variable " + var + "needs to be less than upper bound.");
 
                     GRBVar grbVar = grbModel.addVar(lb, ub, 0.0, GRB.CONTINUOUS, var.getName());
                     vars.put(var, grbVar);
@@ -157,6 +169,20 @@ public class GurobiSolver implements Solver {
             final boolean succ = grbModel.get(GRB.IntAttr.Status) != GRB.INFEASIBLE;
             final boolean unbounded = grbModel.get(GRB.IntAttr.Status) == GRB.UNBOUNDED;
 
+
+            Result.SolverStatus status;
+            if (grbModel.get(GRB.IntAttr.Status) != GRB.UNBOUNDED) {
+                status = Result.SolverStatus.UNBOUNDED;
+            } else if (grbModel.get(GRB.IntAttr.Status) != GRB.INF_OR_UNBD) {
+                status = Result.SolverStatus.INF_OR_UNBD;
+            } else if (grbModel.get(GRB.IntAttr.Status) != GRB.INFEASIBLE) {
+                status = Result.SolverStatus.INFEASIBLE;
+            } else if (grbModel.get(GRB.IntAttr.Status) != GRB.OPTIMAL) {
+                status = Result.SolverStatus.OPTIMAL;
+            } else {
+                throw new RuntimeException("Unknown solver status.");
+            }
+
             if (modelOutputFilePath != null) {
                 grbModel.write(modelOutputFilePath);
             }
@@ -164,7 +190,14 @@ public class GurobiSolver implements Solver {
             Map<Var, Double> solutions = new HashMap<>();
             if (succ) {
                 for (Entry<Var, GRBVar> entry : vars.entrySet()) {
-                    solutions.put(entry.getKey(), entry.getValue().get(GRB.DoubleAttr.X));
+                    try {
+                        solutions.put(entry.getKey(), entry.getValue().get(GRB.DoubleAttr.X));
+                    } catch (GRBException e) {
+                        if (logging)
+                            System.err.println("Warning: Variable " + entry.getKey().getName()
+                                    + " is not in the active model! Could not retrieve objective value.");
+                        solutions.put(entry.getKey(), 0d);
+                    }
                 }
             }
 
@@ -176,7 +209,8 @@ public class GurobiSolver implements Solver {
                 objVal = null;
             }
 
-            final Result.Statistics stats = new Result.Statistics(succ, unbounded, end - start, presolveCallback.colsRemovedByPresolve, presolveCallback.rowsRemovedByPresolve);
+
+            final Result.Statistics stats = new Result.Statistics(status, end - start, presolveCallback.colsRemovedByPresolve, presolveCallback.rowsRemovedByPresolve);
             final Result res = new Result(model, stats, solutions, objVal);
 
             grbModel.dispose();

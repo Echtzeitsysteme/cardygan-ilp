@@ -2925,6 +2925,8 @@ public class ChocoStackOverflow {
         constraints2(model);
         Solver solver = new ChocoSolver.ChocoSolverBuilder().withDefaultIntVarBounds(0, 1).withObjectiveBounds(0, 999999999).build();
         Result res = model.solve(solver);
+        res.getStatistics().getNumRowsRemovedAfterPresolve();
+        res.getStatistics().getNumColsRemovedAfterPresolve();
         System.out.println("Duration of solver run: " + res.getStatistics().getDuration());
     }
 

@@ -59,6 +59,9 @@ public class ChocoSolver implements Solver {
                 if (model.getBounds(var) != null) {
                     lb = new Double(model.getBounds(var).getLb()).intValue();
                     ub = new Double(model.getBounds(var).getUb()).intValue();
+
+                    if (lb > ub)
+                        throw new IllegalArgumentException("Lower bound of variable " + var + "need to be less than upper bound.");
                 } else if (intVarLb != null && intVarUb != null) {
                     lb = intVarLb;
                     ub = intVarUb;
@@ -131,7 +134,13 @@ public class ChocoSolver implements Solver {
             }
         }
 
-        Result.Statistics stats = new Result.Statistics(solution != null, false, end - start, -1, -1);
+        Result.SolverStatus status;
+        if (solution != null)
+            status = Result.SolverStatus.INFEASIBLE;
+        else
+            status = Result.SolverStatus.OPTIMAL;
+
+        Result.Statistics stats = new Result.Statistics(status, end - start, -1, -1);
         return new Result(model, stats, solutions, objVal);
     }
 

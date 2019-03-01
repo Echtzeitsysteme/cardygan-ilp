@@ -119,6 +119,34 @@ public class Model {
     }
 
     /**
+     * Creates new decision variable with given name and lower bound.
+     *
+     * @param name
+     * @return
+     */
+    public IntVar newIntVar(String name, int lb) {
+        if (vars.containsKey(name)) {
+            throw new IllegalStateException("Variable with name " + name + " already defined.");
+        }
+        IntVar var = new IntVar(name);
+        vars.put(name, var);
+        bounds.put(var, new Bounds(lb, -1));
+        return var;
+    }
+
+    /**
+     * Creates new decision variable with given lower bound.
+     *
+     * @param lb
+     * @return
+     */
+    public IntVar newIntVar(int lb) {
+        IntVar var = newIntVar();
+        bounds.put(var, new Bounds(lb, -1));
+        return var;
+    }
+
+    /**
      * Creates new variable of given type with an unique name id.
      *
      * @return

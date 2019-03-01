@@ -2,6 +2,7 @@ package org.cardygan.ilp.api;
 
 import org.cardygan.ilp.api.model.Model;
 import org.cardygan.ilp.api.model.Var;
+import org.cardygan.ilp.api.solver.Solver;
 
 import java.util.Map;
 import java.util.Optional;
@@ -34,7 +35,7 @@ public class Result {
 
     @Override
     public String toString() {
-        return "feasible: " + statistics.feasible + ", unbounded: " + statistics.unbounded + (objVal != null ? ", objVal: " + objVal : "") + ", duration " + statistics.getDuration() + "ms";
+        return "status: " + statistics.status + (objVal != null ? ", objVal: " + objVal : "") + ", duration " + statistics.getDuration() + "ms";
     }
 
     public Model getModel() {
@@ -43,28 +44,22 @@ public class Result {
 
     public static class Statistics {
 
-        private final boolean feasible;
-        private final boolean unbounded;
+        private final SolverStatus status;
         private final long duration;
         private final int colsRemovedByPresolve;
         private final int rowsRemovedByPresolve;
 
 
-        public Statistics(boolean feasible, boolean unbounded, long duration,
+        public Statistics(SolverStatus status, long duration,
                           int colsRemovedByPresolve, int rowsRemovedByPresolve) {
-            this.feasible = feasible;
-            this.unbounded = unbounded;
+            this.status = status;
             this.duration = duration;
             this.colsRemovedByPresolve = colsRemovedByPresolve;
             this.rowsRemovedByPresolve = rowsRemovedByPresolve;
         }
 
-        public boolean isFeasible() {
-            return feasible;
-        }
-
-        public boolean isUnbounded() {
-            return unbounded;
+        public SolverStatus getStatus() {
+            return status;
         }
 
         public long getDuration() {
@@ -88,6 +83,10 @@ public class Result {
         public int getNumRowsRemovedAfterPresolve() {
             return rowsRemovedByPresolve;
         }
+    }
+
+    public enum SolverStatus {
+        UNBOUNDED, INF_OR_UNBD, INFEASIBLE, OPTIMAL
     }
 
 }
