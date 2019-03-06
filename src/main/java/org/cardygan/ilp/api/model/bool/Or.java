@@ -20,7 +20,7 @@ public class Or implements BoolExpr {
     public Or(BoolExpr firstElem, BoolExpr... otherElems) {
         Util.assertNotNull(firstElem, otherElems);
 
-        elements = new ArrayList<>();
+        elements = new ArrayList<>(otherElems.length + 1);
         elements.add(firstElem);
         elements.addAll(Arrays.asList(otherElems));
     }
@@ -39,7 +39,6 @@ public class Or implements BoolExpr {
     public <T> T accept(BoolExprVisitor<T> visitor) {
         return visitor.visit(this);
     }
-
 
 
 }

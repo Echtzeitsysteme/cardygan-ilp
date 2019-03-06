@@ -90,7 +90,7 @@ public class BoolLiteralToConstraintProcessor {
         ilpModel.newConstraint("eq_" + r_k.getName(), Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
 
         Var s = ilpModel.newDoubleVar();
-        List<Coefficient> summands = new ArrayList<>();
+        List<Coefficient> summands = new ArrayList<>(lhs.size() + 1);
         summands.add(Util.coef(-1, s));
         summands.addAll(lhs);
 
@@ -102,11 +102,11 @@ public class BoolLiteralToConstraintProcessor {
         ilpModel.newConstraint("leq1_" + r_k.getName(), Util.leq(summands, rhs));
 
         Var s_2 = ilpModel.newDoubleVar();
-        summands = new ArrayList<>();
+        summands.clear();
         summands.add(Util.coef(1, s_2));
         summands.addAll(lhs);
 
-        Set<Var> sos2 = new HashSet<>();
+        Set<Var> sos2 = new HashSet<>(2);
         sos2.add(s_2);
         sos2.add(r_l);
         addSos1(ilpModel, sos2);
@@ -133,11 +133,11 @@ public class BoolLiteralToConstraintProcessor {
         ilpModel.newConstraint("eq_" + r_k.getName(), Util.eq(Arrays.asList(Util.coef(1, r_l), Util.coef(1, r_k)), 1));
 
         Var s = ilpModel.newDoubleVar();
-        List<Coefficient> summands = new ArrayList<>();
+        List<Coefficient> summands = new ArrayList<>(lhs.size() + 1);
         summands.add(Util.coef(1, s));
         summands.addAll(lhs);
 
-        Set<Var> sos = new HashSet<>();
+        Set<Var> sos = new HashSet<>(2);
         sos.add(s);
         sos.add(r_k);
         addSos1(ilpModel, sos);
@@ -145,11 +145,11 @@ public class BoolLiteralToConstraintProcessor {
         ilpModel.newConstraint("geq1_" + r_k.getName(), Util.geq(summands, rhs));
 
         Var s_2 = ilpModel.newDoubleVar();
-        summands = new ArrayList<>();
+        summands.clear();
         summands.add(Util.coef(-1, s_2));
         summands.addAll(lhs);
 
-        Set<Var> sos2 = new HashSet<>();
+        Set<Var> sos2 = new HashSet<>(2);
         sos2.add(s_2);
         sos2.add(r_l);
         addSos1(ilpModel, sos2);
@@ -160,7 +160,7 @@ public class BoolLiteralToConstraintProcessor {
     }
 
     private List<Coefficient> createSosCoeff(Set<Var> sos) {
-        List<Coefficient> coefficients = new ArrayList<>();
+        List<Coefficient> coefficients = new ArrayList<>(sos.size());
         for (Var var : sos) {
             coefficients.add(Util.coef(1, var));
         }
@@ -186,7 +186,7 @@ public class BoolLiteralToConstraintProcessor {
         if (rhs == 0) {
             // (1-r_k) * M + f_1 - f_i + ... + f_n >= 0
             // - r_k * M + f_1 - f_i + ... + f_n >= -M
-            List<Coefficient> summands = new ArrayList<>();
+            List<Coefficient> summands = new ArrayList<>(lhs.size() + 1);
             summands.add(Util.coef(-M, r_k));
             summands.addAll(lhs);
 
@@ -194,7 +194,7 @@ public class BoolLiteralToConstraintProcessor {
 
             // f_1 - f_i + ... + f_n <= M * r_k - r_l
             // f_1 - f_i + ... + f_n - M r_k + r_l <= 0
-            summands = new ArrayList<>(lhs);
+            summands.clear();
             summands.add(Util.coef(-M, r_k));
             summands.add(Util.coef(1, r_l));
 
@@ -203,7 +203,7 @@ public class BoolLiteralToConstraintProcessor {
         } else {
             if (rhs == 1) {
                 // 1 - r_l + M r_k >= f_i + ... + f_n
-                List<Coefficient> summands = new ArrayList<>();
+                List<Coefficient> summands = new ArrayList<>(lhs.size() + 2);
                 summands.add(Util.coef(-1, r_l));
                 summands.add(Util.coef(M, r_k));
                 summands.addAll(Util.neg(lhs));
@@ -211,7 +211,7 @@ public class BoolLiteralToConstraintProcessor {
                 ilpModel.newConstraint("geq_" + r_k.getName(), Util.geq(summands, -1));
             } else {
                 // (rhs-1) * r_l + M * r_k >= f_i + ... + f_n
-                List<Coefficient> summands = new ArrayList<>();
+                List<Coefficient> summands = new ArrayList<>(lhs.size() + 2);
                 summands.add(Util.coef(rhs - 1, r_l));
                 summands.add(Util.coef(M, r_k));
                 summands.addAll(Util.neg(lhs));
@@ -263,7 +263,7 @@ public class BoolLiteralToConstraintProcessor {
 
         } else {
             // f_i + ... + f_n >= (rhs + 1) * r_l
-            List<Coefficient> summands = new ArrayList<>();
+            List<Coefficient> summands = new ArrayList<>(lhs.size() + 1);
             summands.add(Util.coef(-(rhs + 1), r_l));
             summands.addAll(lhs);
 

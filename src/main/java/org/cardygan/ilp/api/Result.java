@@ -86,7 +86,7 @@ public class Result {
     }
 
     public enum SolverStatus {
-        UNBOUNDED, INF_OR_UNBD, INFEASIBLE, OPTIMAL
+        UNBOUNDED, INF_OR_UNBD, INFEASIBLE, OPTIMAL, TIME_OUT
     }
 
 }

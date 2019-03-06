@@ -14,7 +14,7 @@ public class And implements BoolExpr {
 
     public And(List<BoolExpr> elements) {
         Util.assertNotNull(elements);
-        if (elements.isEmpty()){
+        if (elements.isEmpty()) {
             throw new IllegalStateException("Cannot crete AND expression from empty list.");
         }
         this.elements = elements;
@@ -23,11 +23,10 @@ public class And implements BoolExpr {
     public And(BoolExpr firstElem, BoolExpr... otherElems) {
         Util.assertNotNull(firstElem, otherElems);
 
-        elements = new ArrayList<>();
+        elements = new ArrayList<>(otherElems.length + 1);
         elements.add(firstElem);
         elements.addAll(Arrays.asList(otherElems));
     }
-
 
 
     /**

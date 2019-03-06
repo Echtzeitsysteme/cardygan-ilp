@@ -24,6 +24,8 @@ public class GurobiSolver implements Solver {
     private Map<Var, GRBVar> vars;
     private final Long timeout;
     private final boolean withPresolve;
+    private final Double mipGap;
+    private final Integer feasibleSolLimit;
 
     public GurobiSolver() {
         this(new GurobiSolverBuilder());
@@ -33,6 +35,7 @@ public class GurobiSolver implements Solver {
         this.seed = builder.seed;
         this.libraryPath = builder.libraryPath;
         this.withPresolve = builder.withPresolve;
+        this.mipGap = builder.mipGap;
 
         if (libraryPath != null)
             LibraryUtil.loadLibraryFromPath(libraryPath);
@@ -40,6 +43,7 @@ public class GurobiSolver implements Solver {
         this.logging = builder.logging;
         this.timeout = builder.timeout;
         this.modelOutputFilePath = builder.modelOutputFilePath;
+        this.feasibleSolLimit = builder.feasibleSolLimit;
     }
 
     public static GurobiSolverBuilder create() {
@@ -72,6 +76,9 @@ public class GurobiSolver implements Solver {
             }
 
             final GRBModel grbModel = new GRBModel(env);
+
+            if (mipGap != null)
+                grbModel.set(GRB.DoubleParam.MIPGap, mipGap);
 
             // Create vars
             for (Var var : basicModel.getVars().values()) {
@@ -160,28 +167,33 @@ public class GurobiSolver implements Solver {
             PresolveCallback presolveCallback = new PresolveCallback();
             grbModel.setCallback(presolveCallback);
 
+            if (feasibleSolLimit != null)
+                grbModel.set(GRB.IntParam.SolutionLimit, feasibleSolLimit);
+
+//            grbModel.tune();
+
 
             final long start = System.currentTimeMillis();
             grbModel.optimize();
             final long end = System.currentTimeMillis();
 
 
-            final boolean succ = grbModel.get(GRB.IntAttr.Status) != GRB.INFEASIBLE;
-            final boolean unbounded = grbModel.get(GRB.IntAttr.Status) == GRB.UNBOUNDED;
-
+            final boolean succ = grbModel.get(GRB.IntAttr.Status) == GRB.OPTIMAL;
 
             Result.SolverStatus status;
-            if (grbModel.get(GRB.IntAttr.Status) != GRB.UNBOUNDED) {
+            if (grbModel.get(GRB.IntAttr.Status) == GRB.UNBOUNDED) {
                 status = Result.SolverStatus.UNBOUNDED;
-            } else if (grbModel.get(GRB.IntAttr.Status) != GRB.INF_OR_UNBD) {
+            } else if (grbModel.get(GRB.IntAttr.Status) == GRB.INF_OR_UNBD) {
                 status = Result.SolverStatus.INF_OR_UNBD;
-            } else if (grbModel.get(GRB.IntAttr.Status) != GRB.INFEASIBLE) {
+            } else if (grbModel.get(GRB.IntAttr.Status) == GRB.INFEASIBLE) {
                 status = Result.SolverStatus.INFEASIBLE;
-            } else if (grbModel.get(GRB.IntAttr.Status) != GRB.OPTIMAL) {
+            } else if (grbModel.get(GRB.IntAttr.Status) == GRB.OPTIMAL) {
                 status = Result.SolverStatus.OPTIMAL;
-            } else {
-                throw new RuntimeException("Unknown solver status.");
-            }
+            } else if (grbModel.get(GRB.IntAttr.Status) == GRB.TIME_LIMIT) {
+                System.err.println("Warning: time limit reached! " + grbModel.get(GRB.IntAttr.SolCount)
+                        + " solutions were found so far.");
+                status = Result.SolverStatus.TIME_OUT;
+            } else throw new RuntimeException("Unknown solver status.");
 
             if (modelOutputFilePath != null) {
                 grbModel.write(modelOutputFilePath);
@@ -202,9 +214,13 @@ public class GurobiSolver implements Solver {
             }
 
 
-            final Double objVal;
+            Double objVal;
             if (succ && obj != null) {
-                objVal = obj.getValue();
+                try {
+                    objVal = obj.getValue();
+                } catch (GRBException e) {
+                    objVal = 0d;
+                }
             } else {
                 objVal = null;
             }
@@ -215,6 +231,7 @@ public class GurobiSolver implements Solver {
 
             grbModel.dispose();
             env.dispose();
+
 
             return res;
 
@@ -289,6 +306,8 @@ public class GurobiSolver implements Solver {
         private boolean logging = false;
         private String modelOutputFilePath = null;
         private boolean withPresolve = true;
+        private Double mipGap = null;
+        private Integer feasibleSolLimit = null;
 
         private GurobiSolverBuilder() {
         }
@@ -309,8 +328,25 @@ public class GurobiSolver implements Solver {
             return this;
         }
 
+        /**
+         * Sets limit for feasible solutions. Solver will stop if it has found the given number of feasible solutions
+         * even if solution is not optimal.
+         *
+         * @param feasibleSolLimit
+         * @return
+         */
+        public GurobiSolverBuilder withFeasibleSolLimit(int feasibleSolLimit) {
+            this.feasibleSolLimit = feasibleSolLimit;
+            return this;
+        }
+
         public GurobiSolverBuilder withModelOutput(String absoluteFilePath) {
             this.modelOutputFilePath = absoluteFilePath;
+            return this;
+        }
+
+        public GurobiSolverBuilder withMipGap(double mipGap) {
+            this.mipGap = mipGap;
             return this;
         }
 

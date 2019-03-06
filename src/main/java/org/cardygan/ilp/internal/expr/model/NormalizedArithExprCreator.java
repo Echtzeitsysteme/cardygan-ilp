@@ -44,17 +44,17 @@ class NormalizedArithExprCreator {
 
         if (relOp instanceof Leq && !negateBothSides || relOp instanceof Geq && negateBothSides) {
             if (c.getName().isPresent())
-            return  new LeqNormalizedArithExpr(c.getName().get(),relOp, rhsParam, coefficients);
-                else
+                return new LeqNormalizedArithExpr(c.getName().get(), relOp, rhsParam, coefficients);
+            else
                 return new LeqNormalizedArithExpr(relOp, rhsParam, coefficients);
         } else if (relOp instanceof Leq || relOp instanceof Geq) {
             if (c.getName().isPresent())
-                return  new GeqNormalizedArithExpr(c.getName().get(),relOp, rhsParam, coefficients);
+                return new GeqNormalizedArithExpr(c.getName().get(), relOp, rhsParam, coefficients);
             else
                 return new GeqNormalizedArithExpr(relOp, rhsParam, coefficients);
         } else if (relOp instanceof Eq) {
             if (c.getName().isPresent())
-                return  new EqNormalizedArithExpr(c.getName().get(),relOp, rhsParam, coefficients);
+                return new EqNormalizedArithExpr(c.getName().get(), relOp, rhsParam, coefficients);
             else
                 return new EqNormalizedArithExpr(relOp, rhsParam, coefficients);
         } else {
@@ -69,7 +69,7 @@ class NormalizedArithExprCreator {
     }
 
     private static List<Coefficient> consolidate(List<Coefficient> coefficients) {
-        Map<Var, Coefficient> ret = new HashMap<>();
+        Map<Var, Coefficient> ret = new HashMap<>(coefficients.size());
         for (Coefficient coef : coefficients) {
             if (ret.containsKey(coef.getVar())) {
                 double curVal = ret.get(coef.getVar()).getParam().getVal();

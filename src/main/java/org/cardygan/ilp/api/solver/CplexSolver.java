@@ -27,11 +27,12 @@ public class CplexSolver implements Solver {
     private final Integer seed;
     private final boolean logging;
     private final boolean preSolve;
-    private final int threadCount;
+    private final Integer threadCount;
     private final int parallelMode;
     private Map<Var, IloIntVar> vars;
     private Map<Var, IloNumVar> numVars;
     private final Long timeout;
+    private final Long feasibleSolLimit;
 
     public CplexSolver() {
         this(new CplexSolverBuilder());
@@ -51,6 +52,7 @@ public class CplexSolver implements Solver {
         this.threadCount = builder.threadCount;
         this.parallelMode = builder.parallelMode;
         this.timeout = builder.timeout;
+        this.feasibleSolLimit = builder.feasibleSolLimit;
     }
 
     public static CplexSolverBuilder create() {
@@ -146,7 +148,12 @@ public class CplexSolver implements Solver {
             cplex.setParam(IloCplex.BooleanParam.PreInd, preSolve);
 
             cplex.setParam(IloCplex.IntParam.ParallelMode, parallelMode);
-            cplex.setParam(IloCplex.Param.Threads, threadCount);
+
+            if (threadCount != null)
+                cplex.setParam(IloCplex.Param.Threads, threadCount);
+
+            if (feasibleSolLimit != null)
+                cplex.setParam(IloCplex.LongParam.IntSolLim, feasibleSolLimit);
 
 
             if (seed != null) {
@@ -231,6 +238,8 @@ public class CplexSolver implements Solver {
                 status = Result.SolverStatus.INFEASIBLE;
             } else if (cplex.getStatus() == IloCplex.Status.Optimal) {
                 status = Result.SolverStatus.OPTIMAL;
+            } else if (cplex.getStatus() == IloCplex.Status.Unknown) {
+                status = Result.SolverStatus.TIME_OUT;
             } else {
                 throw new RuntimeException("Unknown solver status.");
             }
@@ -238,6 +247,8 @@ public class CplexSolver implements Solver {
             final Result res = new Result(model, new Result.Statistics(status, end - start, colsRemovedByPresolve, rowsRemovedByPresolve),
                     solutions, objVal);
 
+            cplex.clearCallbacks();
+            cplex.clearModel();
             cplex.end();
             return res;
 
@@ -339,10 +350,11 @@ public class CplexSolver implements Solver {
         private String modelOutputFilePath = null;
         private Integer seed = null;
         private int parallelMode = CPX_PARALLEL_AUTO;
-        private int threadCount = 0;
+        private Integer threadCount;
         private boolean presolve = true;
         private Long timeout = null;
         private boolean logging = false;
+        private Long feasibleSolLimit = null;
 
         private CplexSolverBuilder() {
             this.cplexLibraryPath = System.getenv(ENV_VAR_CPLEX_LIB_PATH);
@@ -366,6 +378,18 @@ public class CplexSolver implements Solver {
 
         public CplexSolverBuilder withPresolve() {
             this.presolve = true;
+            return this;
+        }
+
+        /**
+         * Sets limit for feasible solutions. Solver will stop if it has found the given number of feasible solutions
+         * even if solution is not optimal.
+         *
+         * @param feasibleSolLimit
+         * @return
+         */
+        public CplexSolverBuilder withFeasibleSolLimit(long feasibleSolLimit) {
+            this.feasibleSolLimit = feasibleSolLimit;
             return this;
         }
 

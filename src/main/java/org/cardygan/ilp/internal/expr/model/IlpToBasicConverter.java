@@ -48,7 +48,7 @@ public class IlpToBasicConverter {
                 .filter(c -> !(c.getExpr() instanceof RelOp)).count());
 
         // transform remaining inequalities to basic ILP model
-        List<NormalizedArithExpr> normalizedArithConstraints = new ArrayList<>();
+        List<NormalizedArithExpr> normalizedArithConstraints = new ArrayList<>(copiedModel.getConstraints().size());
         copiedModel.getConstraints().stream()
                 .filter(c -> (c.getExpr() instanceof RelOp))
                 .forEach(c ->
