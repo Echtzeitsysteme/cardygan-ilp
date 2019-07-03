@@ -67,13 +67,15 @@ public class IlpToBasicConverter {
                     basicObjective,
                     copiedModel.getM().get(),
                     copiedModel.getVars(),
-                    copiedModel.getBounds(),
+                    copiedModel.getDblBounds(),
+                    copiedModel.getIntBounds(),
                     copiedModel.getSos1()
             );
         else return new BasicModel(normalizedArithConstraints,
                 basicObjective,
                 copiedModel.getVars(),
-                copiedModel.getBounds(),
+                copiedModel.getDblBounds(),
+                copiedModel.getIntBounds(),
                 copiedModel.getSos1()
         );
     }

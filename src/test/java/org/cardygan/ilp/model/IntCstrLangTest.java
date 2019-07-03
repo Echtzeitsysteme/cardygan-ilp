@@ -78,7 +78,7 @@ public class IntCstrLangTest {
 
         Result res = model.solve(solver);
         assertEquals(new Double(2), res.getObjVal().get());
-        assertTrue(res.getStatistics().isFeasible());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
     }
 
     @Test
@@ -94,7 +94,7 @@ public class IntCstrLangTest {
         Result res = model.solve(solver);
 
         assertEquals(new Double(3), res.getObjVal().get());
-        assertTrue(res.getStatistics().isFeasible());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
     }
 
     @Test
@@ -113,7 +113,7 @@ public class IntCstrLangTest {
         Result res = model.solve(solver);
 
         assertEquals(new Double(3), res.getObjVal().get());
-        assertTrue(res.getStatistics().isFeasible());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
     }
 
     @Test
@@ -132,7 +132,7 @@ public class IntCstrLangTest {
         Result res = model.solve(solver);
 
         assertEquals(new Double(3), res.getObjVal().get());
-        assertTrue(res.getStatistics().isFeasible());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
     }
 
     @Test
@@ -150,8 +150,8 @@ public class IntCstrLangTest {
         Result res = model.solve(solver);
 
         assertEquals(new Double(2), res.getObjVal().get());
-        assertTrue(res.getStatistics().isFeasible());
-        assertFalse(res.getStatistics().isUnbounded());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
+        assertFalse(res.getStatistics().getStatus() == Result.SolverStatus.UNBOUNDED);
     }
 
     @Test
@@ -169,8 +169,8 @@ public class IntCstrLangTest {
         Result res = model.solve(solver);
 
         assertEquals(new Double(11), res.getObjVal().get());
-        assertTrue(res.getStatistics().isFeasible());
-        assertFalse(res.getStatistics().isUnbounded());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
+        assertFalse(res.getStatistics().getStatus() == Result.SolverStatus.UNBOUNDED);
     }
 
     @Test
@@ -193,8 +193,8 @@ public class IntCstrLangTest {
         Result res = model.solve(solver);
 
         assertEquals(new Double(11), res.getObjVal().get());
-        assertTrue(res.getStatistics().isFeasible());
-        assertFalse(res.getStatistics().isUnbounded());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
+        assertFalse(res.getStatistics().getStatus() == Result.SolverStatus.UNBOUNDED);
     }
 
 
@@ -216,8 +216,8 @@ public class IntCstrLangTest {
         Result res = model.solve(solver);
 
         assertEquals(new Double(11), res.getObjVal().get());
-        assertTrue(res.getStatistics().isFeasible());
-        assertFalse(res.getStatistics().isUnbounded());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
+        assertFalse(res.getStatistics().getStatus() == Result.SolverStatus.UNBOUNDED);
     }
 
     @Test
@@ -240,7 +240,7 @@ public class IntCstrLangTest {
         Result res = model.solve(solver);
 
         assertEquals(new Double(3), res.getObjVal().get());
-        assertTrue(res.getStatistics().isFeasible());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
     }
 
 
@@ -261,7 +261,7 @@ public class IntCstrLangTest {
         Result res = model.solve(solver);
 
         assertTrue(5d == res.getObjVal().get());
-        assertTrue(res.getStatistics().isFeasible());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
     }
 
     @Test
@@ -283,7 +283,7 @@ public class IntCstrLangTest {
 
         Result res = model.solve(solver);
 
-        assertTrue(res.getStatistics().isFeasible());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
         assertEquals(new Double(2d), res.getSolutions().get(f3));
     }
 
@@ -324,7 +324,7 @@ public class IntCstrLangTest {
 
         Result res = model.solve(solver);
 
-        assertTrue(res.getStatistics().isFeasible());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
 
         assertEquals(new Double(3d), res.getSolutions().get(v3));
     }

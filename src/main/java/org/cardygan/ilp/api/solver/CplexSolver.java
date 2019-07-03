@@ -6,8 +6,7 @@ import ilog.concert.IloNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import org.cardygan.ilp.api.Result;
-import org.cardygan.ilp.api.model.Model;
-import org.cardygan.ilp.api.model.Var;
+import org.cardygan.ilp.api.model.*;
 import org.cardygan.ilp.internal.expr.Coefficient;
 import org.cardygan.ilp.internal.expr.model.*;
 import org.cardygan.ilp.internal.util.IlpUtil;
@@ -18,7 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public class CplexSolver implements Solver {
 
@@ -91,11 +90,11 @@ public class CplexSolver implements Solver {
                     int lb = -Integer.MAX_VALUE;
                     int ub = Integer.MAX_VALUE;
 
-                    if (basicModel.getBounds(var) != null) {
-                        Model.Bounds bounds = basicModel.getBounds(var);
-                        lb = new Double(bounds.getLb()).intValue();
+                    if (basicModel.getBounds((IntVar) var) != null) {
+                        IntBounds bounds = basicModel.getBounds((IntVar) var);
+                        lb = bounds.getLb();
 
-                        int newUb = new Double(bounds.getUb()).intValue();
+                        int newUb = bounds.getUb();
                         if (newUb >= 0)
                             ub = newUb;
                     }
@@ -108,10 +107,10 @@ public class CplexSolver implements Solver {
                     double lb = -Double.MAX_VALUE;
                     double ub = Double.MAX_VALUE;
 
-                    if (basicModel.getBounds(var) != null) {
-                        Model.Bounds bounds = basicModel.getBounds(var);
-                        lb = bounds.getLb();
-                        double newUb = bounds.getUb();
+                    if (basicModel.getBounds((DoubleVar) var) != null) {
+                        DblBounds dblBounds = basicModel.getBounds((DoubleVar) var);
+                        lb = dblBounds.getLb();
+                        double newUb = dblBounds.getUb();
                         if (newUb >= 0)
                             ub = newUb;
                     }
@@ -182,9 +181,9 @@ public class CplexSolver implements Solver {
                 callback = new PresolveCallback();
                 cplex.use(callback);
             }
-            final long start = System.currentTimeMillis();
+            final long start = System.nanoTime();
             boolean succ = cplex.solve();
-            final long end = System.currentTimeMillis();
+            final long end = System.nanoTime();
 
             if (modelOutputFilePath != null) {
                 cplex.exportModel(modelOutputFilePath);
@@ -244,7 +243,8 @@ public class CplexSolver implements Solver {
                 throw new RuntimeException("Unknown solver status.");
             }
 
-            final Result res = new Result(model, new Result.Statistics(status, end - start, colsRemovedByPresolve, rowsRemovedByPresolve),
+            final long duration = TimeUnit.MILLISECONDS.convert(end - start, TimeUnit.NANOSECONDS);
+            final Result res = new Result(model, new Result.Statistics(status, duration, colsRemovedByPresolve, rowsRemovedByPresolve),
                     solutions, objVal);
 
             cplex.clearCallbacks();
@@ -280,24 +280,28 @@ public class CplexSolver implements Solver {
         return model.sum(exprs);
     }
 
-    private void constructSos1Constraints(IloCplex model, List<Set<Var>> sets) throws IloException {
-        for (Set<Var> sos : sets) {
-            double[] weights = new double[sos.size()];
-            for (int i = 0; i < sos.size(); i++) {
-                weights[i] = i + 1;
-            }
-            IloNumVar[] sosVars = sos.stream().map(v -> {
-                if (vars.containsKey(v)) {
-                    return vars.get(v);
-                } else if (numVars.containsKey(v)) {
-                    return numVars.get(v);
+    private void constructSos1Constraints(IloCplex model, List<Sos1Constraint> cstrs) throws IloException {
+
+        for (Sos1Constraint sos : cstrs) {
+            double[] weights = new double[sos.getElements().values().size()];
+            IloNumVar[] sosVars = new IloNumVar[sos.getElements().keySet().size()];
+
+            int i = 0;
+            for (Entry<Var, Double> entry : sos.getElements().entrySet()) {
+                weights[i] = entry.getValue();
+                if (vars.containsKey(entry.getKey())) {
+                    sosVars[i] = vars.get(entry.getKey());
                 } else {
-                    throw new IllegalStateException("Could not find variable corresponding to " + v.getName());
+                    throw new IllegalStateException("Could not find variable corresponding to " + entry.getKey().getName());
                 }
-            }).toArray(IloNumVar[]::new);
+
+                i++;
+            }
+
             model.addSOS1(sosVars, weights);
         }
     }
+
 
     private void constructConstraints(IloCplex model, List<NormalizedArithExpr> ilpNormalizedArithExprs) throws IloException {
 

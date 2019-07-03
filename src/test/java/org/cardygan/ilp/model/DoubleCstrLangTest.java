@@ -50,7 +50,7 @@ public class DoubleCstrLangTest {
 
         Result res = model.solve(solver);
 
-        assertTrue(res.getStatistics().isFeasible());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
     }
 
 
@@ -70,7 +70,7 @@ public class DoubleCstrLangTest {
 
         Result res = model.solve(solver);
 
-        assertTrue(res.getStatistics().isFeasible());
+        assertTrue(res.getStatistics().getStatus() == Result.SolverStatus.OPTIMAL);
 
         assertEquals(new Double(0.6931471805599453), res.getSolutions().get(v1));
     }

@@ -2,8 +2,7 @@ package org.cardygan.ilp.api.solver;
 
 import gurobi.*;
 import org.cardygan.ilp.api.Result;
-import org.cardygan.ilp.api.model.Model;
-import org.cardygan.ilp.api.model.Var;
+import org.cardygan.ilp.api.model.*;
 import org.cardygan.ilp.internal.expr.Coefficient;
 import org.cardygan.ilp.internal.expr.model.*;
 import org.cardygan.ilp.internal.util.IlpUtil;
@@ -13,7 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public class GurobiSolver implements Solver {
 
@@ -90,11 +89,11 @@ public class GurobiSolver implements Solver {
                     double lb = -GRB.INFINITY;
                     double ub = GRB.INFINITY;
 
-                    if (basicModel.getBounds(var) != null) {
-                        Model.Bounds bounds = basicModel.getBounds(var);
-                        lb = new Double(bounds.getLb()).intValue();
+                    if (basicModel.getBounds((IntVar) var) != null) {
+                        IntBounds bounds = basicModel.getBounds((IntVar) var);
+                        lb = bounds.getLb();
 
-                        int newUb = new Double(bounds.getUb()).intValue();
+                        int newUb = bounds.getUb();
                         if (newUb >= 0)
                             ub = newUb;
                     }
@@ -108,9 +107,9 @@ public class GurobiSolver implements Solver {
                     double lb = -GRB.INFINITY;
                     double ub = GRB.INFINITY;
 
-                    if (basicModel.getBounds(var) != null) {
-                        Model.Bounds bounds = basicModel.getBounds(var);
-                        lb = new Double(bounds.getLb()).intValue();
+                    if (basicModel.getBounds((DoubleVar) var) != null) {
+                        DblBounds bounds = basicModel.getBounds((DoubleVar) var);
+                        lb = bounds.getLb();
 
                         double newUb = bounds.getUb();
                         if (newUb >= 0)
@@ -173,9 +172,9 @@ public class GurobiSolver implements Solver {
 //            grbModel.tune();
 
 
-            final long start = System.currentTimeMillis();
+            final long start = System.nanoTime();
             grbModel.optimize();
-            final long end = System.currentTimeMillis();
+            final long end = System.nanoTime();
 
 
             final boolean succ = grbModel.get(GRB.IntAttr.Status) == GRB.OPTIMAL;
@@ -225,8 +224,8 @@ public class GurobiSolver implements Solver {
                 objVal = null;
             }
 
-
-            final Result.Statistics stats = new Result.Statistics(status, end - start, presolveCallback.colsRemovedByPresolve, presolveCallback.rowsRemovedByPresolve);
+            final long duration = TimeUnit.MILLISECONDS.convert(end - start, TimeUnit.NANOSECONDS);
+            final Result.Statistics stats = new Result.Statistics(status, duration, presolveCallback.colsRemovedByPresolve, presolveCallback.rowsRemovedByPresolve);
             final Result res = new Result(model, stats, solutions, objVal);
 
             grbModel.dispose();
@@ -248,24 +247,31 @@ public class GurobiSolver implements Solver {
         return expr;
     }
 
-    private void constructSos1Constraints(GRBModel model, List<Set<Var>> sets) throws GRBException {
-        for (Set<Var> sos : sets) {
-            double[] weights = new double[sos.size()];
-            for (int i = 0; i < sos.size(); i++) {
-                weights[i] = i + 1;
-            }
-            GRBVar[] sosVars = sos.stream().map(v -> {
-                if (vars.containsKey(v)) {
-                    return vars.get(v);
+    private void constructSos1Constraints(GRBModel model, List<Sos1Constraint> cstrs) throws GRBException {
+        for (Sos1Constraint sos : cstrs) {
+
+            double[] weights = new double[sos.getElements().size()];
+            GRBVar[] sosVars = new GRBVar[sos.getElements().size()];
+
+
+            int i = 0;
+            for (Entry<Var, Double> entry : sos.getElements().entrySet()) {
+                weights[i] = entry.getValue();
+                if (vars.containsKey(entry.getKey())) {
+                    sosVars[i] = vars.get(entry.getKey());
                 } else {
-                    throw new IllegalStateException("Could not find variable corresponding to " + v.getName());
+                    throw new IllegalStateException("Could not find variable corresponding to " + entry.getKey().getName());
                 }
-            }).toArray(GRBVar[]::new);
+
+
+                i++;
+            }
             model.addSOS(sosVars, weights, 1);
         }
     }
 
-    private void constructConstraints(GRBModel model, List<NormalizedArithExpr> ilpNormalizedArithExprs) throws GRBException {
+    private void constructConstraints(GRBModel model, List<NormalizedArithExpr> ilpNormalizedArithExprs) throws
+            GRBException {
         int count = 0;
         for (final NormalizedArithExpr expr : ilpNormalizedArithExprs) {
             final GRBLinExpr lhs = createExpr(expr.getCoefficients());

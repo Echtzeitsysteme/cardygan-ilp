@@ -56,9 +56,11 @@ public class ChocoSolver implements Solver {
                 final int lb;
                 final int ub;
 
-                if (model.getBounds(var) != null) {
-                    lb = new Double(model.getBounds(var).getLb()).intValue();
-                    ub = new Double(model.getBounds(var).getUb()).intValue();
+                org.cardygan.ilp.api.model.IntVar intVar = (org.cardygan.ilp.api.model.IntVar) var;
+
+                if (model.getBounds(intVar) != null) {
+                    lb = model.getBounds(intVar).getLb();
+                    ub = model.getBounds(intVar).getUb();
 
                     if (lb > ub)
                         throw new IllegalArgumentException("Lower bound of variable " + var + "need to be less than upper bound.");
@@ -291,7 +293,7 @@ public class ChocoSolver implements Solver {
         }
 
         /**
-         * Bounds for objective function.
+         * DblBounds for objective function.
          *
          * @param lb default lower bound for objective function
          * @param ub default upper bound for objective function

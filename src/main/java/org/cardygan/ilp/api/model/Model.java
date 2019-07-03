@@ -17,17 +17,20 @@ public class Model {
     private Integer m;
     private int counter = 0;
     private final Map<String, Var> vars;
-    private final Map<Var, Bounds> bounds;
-    private final List<Set<Var>> sos1;
+    private final Map<DoubleVar, DblBounds> dblBounds;
+    private final Map<IntVar, IntBounds> intBounds;
+    private final List<Sos1Constraint> sos1;
 
     private Model(Map<String, Var> vars,
-                  Map<Var, Bounds> bounds,
-                  List<Set<Var>> sos1,
+                  Map<DoubleVar, DblBounds> dblBounds,
+                  Map<IntVar, IntBounds> intBounds,
+                  List<Sos1Constraint> sos1,
                   List<Constraint> constraints,
                   Integer m,
                   Objective objective) {
         this.vars = new HashMap<>(vars);
-        this.bounds = new HashMap<>(bounds);
+        this.dblBounds = new HashMap<>(dblBounds);
+        this.intBounds = new HashMap<>(intBounds);
         this.constraints = new ArrayList<>(constraints);
         this.sos1 = new ArrayList<>(sos1);
         this.m = m;
@@ -36,7 +39,8 @@ public class Model {
 
     public Model() {
         vars = new HashMap<>();
-        bounds = new HashMap<>();
+        dblBounds = new HashMap<>();
+        intBounds = new HashMap<>();
         constraints = new ArrayList<>();
         sos1 = new ArrayList<>();
         m = null;
@@ -51,7 +55,7 @@ public class Model {
         return Optional.ofNullable(objective);
     }
 
-    public List<Set<Var>> getSos1() {
+    public List<Sos1Constraint> getSos1() {
         return Collections.unmodifiableList(sos1);
     }
 
@@ -78,12 +82,20 @@ public class Model {
         return cstr;
     }
 
-    public Bounds getBounds(Var var) {
-        return bounds.get(var);
+    public DblBounds getBounds(DoubleVar var) {
+        return dblBounds.get(var);
     }
 
-    public Map<Var, Bounds> getBounds() {
-        return Collections.unmodifiableMap(bounds);
+    public IntBounds getBounds(IntVar var) {
+        return intBounds.get(var);
+    }
+
+    public Map<DoubleVar, DblBounds> getDblBounds() {
+        return Collections.unmodifiableMap(dblBounds);
+    }
+
+    public Map<IntVar, IntBounds> getIntBounds() {
+        return Collections.unmodifiableMap(intBounds);
     }
 
 
@@ -114,7 +126,7 @@ public class Model {
         }
         IntVar var = new IntVar(name);
         vars.put(name, var);
-        bounds.put(var, new Bounds(lb, ub));
+        intBounds.put(var, new IntBounds(lb, ub));
         return var;
     }
 
@@ -130,7 +142,7 @@ public class Model {
         }
         IntVar var = new IntVar(name);
         vars.put(name, var);
-        bounds.put(var, new Bounds(lb, -1));
+        intBounds.put(var, new IntBounds(lb, -1));
         return var;
     }
 
@@ -142,7 +154,7 @@ public class Model {
      */
     public IntVar newIntVar(int lb) {
         IntVar var = newIntVar();
-        bounds.put(var, new Bounds(lb, -1));
+        intBounds.put(var, new IntBounds(lb, -1));
         return var;
     }
 
@@ -160,9 +172,12 @@ public class Model {
     }
 
 
-    public void newSos1(Set<Var> vars) {
-        sos1.add(vars);
+    public void newSos1(List<Var> vars) {
+        sos1.add(new Sos1Constraint(vars));
+    }
 
+    public void newSos1(Map<Var, Double> elements) {
+        sos1.add(new Sos1Constraint(elements));
     }
 
     /**
@@ -222,7 +237,24 @@ public class Model {
         }
         DoubleVar var = new DoubleVar(name);
         vars.put(name, var);
-        bounds.put(var, new Bounds(lb, ub));
+        dblBounds.put(var, new DblBounds(lb, ub));
+        return var;
+    }
+
+    /**
+     * Creates new decision variable with given name and lower bound.
+     *
+     * @param name
+     * @param lb
+     * @return
+     */
+    public DoubleVar newDoubleVar(String name, double lb) {
+        if (vars.containsKey(name)) {
+            throw new IllegalStateException("Variable with name " + name + " already defined.");
+        }
+        DoubleVar var = new DoubleVar(name);
+        vars.put(name, var);
+        dblBounds.put(var, new DblBounds(lb, -1));
         return var;
     }
 
@@ -263,7 +295,8 @@ public class Model {
 
     public Model copy(List<Constraint> constraints) {
         return new Model(vars,
-                bounds,
+                dblBounds,
+                intBounds,
                 sos1,
                 constraints,
                 m,
@@ -272,7 +305,8 @@ public class Model {
 
     public Model copy() {
         return new Model(vars,
-                bounds,
+                dblBounds,
+                intBounds,
                 sos1,
                 constraints,
                 m,
@@ -290,24 +324,6 @@ public class Model {
 
     public void setM(int m) {
         this.m = m;
-    }
-
-    public static class Bounds {
-        private final double lb;
-        private final double ub;
-
-        public Bounds(double lb, double ub) {
-            this.lb = lb;
-            this.ub = ub;
-        }
-
-        public double getLb() {
-            return lb;
-        }
-
-        public double getUb() {
-            return ub;
-        }
     }
 
 

@@ -38,7 +38,7 @@ public class ExprPrettyPrinter implements BoolExprVisitor<String>, ArithExprVisi
 
     @Override
     public String visit(Or expr) {
-        return "(" + expr.getElements().stream().map(e -> expr.accept(this)).collect(Collectors.joining(" || ")) + ")";
+        return "(" + expr.getElements().stream().map(e -> e.accept(this)).collect(Collectors.joining(" || ")) + ")";
     }
 
     @Override
