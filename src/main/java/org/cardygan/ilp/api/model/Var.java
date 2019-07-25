@@ -1,6 +1,7 @@
 package org.cardygan.ilp.api.model;
 
 import org.cardygan.ilp.internal.expr.ArithExprVisitor;
+import org.cardygan.ilp.internal.util.Util;
 
 import java.util.Objects;
 
@@ -12,6 +13,7 @@ public abstract class Var extends ArithUnaryExpr {
     private final String name;
 
     Var(String name) {
+        Util.assertNotNull(name);
         this.name = name;
     }
 
@@ -24,14 +26,14 @@ public abstract class Var extends ArithUnaryExpr {
         return name;
     }
 
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Var var = (Var) o;
-        return Objects.equals(name, var.name);
+        return name.equals(var.name);
     }
-
 
     @Override
     public int hashCode() {

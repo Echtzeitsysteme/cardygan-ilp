@@ -4,6 +4,7 @@ import org.cardygan.ilp.api.model.BinaryVar;
 import org.cardygan.ilp.api.model.Model;
 import org.cardygan.ilp.api.model.bool.*;
 import org.cardygan.ilp.internal.expr.BoolExprVisitor;
+import org.cardygan.ilp.internal.expr.ExprSimplifier;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,24 +17,21 @@ import java.util.stream.Collectors;
  *
  * @author markus
  */
-public class TseytinTransformer {
+public class TseytinTransformer implements CnfTransformer {
 
-    private final Map<BoolExpr, BinaryVar> vars;
-    private final Map<BinaryVar, RelOp> varMapping;
-    private final List<CnfClause> clauses;
-    private final BoolVarGen varGen;
-    private final BoolExpr expr;
+    private Map<BoolExpr, BinaryVar> vars;
+    private Map<BinaryVar, RelOp> varMapping;
+    private List<CnfClause> clauses;
+    private BoolVarGen varGen;
 
 
-    public TseytinTransformer(Model model, BoolExpr expr) {
+    @Override
+    public void computeCnf(BoolExpr expr, Model model) {
+        varGen = new BoolVarGen(model);
         varMapping = new HashMap<>();
         vars = new HashMap<>();
-        varGen = new BoolVarGen(model);
-        clauses = new ArrayList<>();
-        this.expr = expr;
-    }
 
-    public void transform() {
+        clauses = new ArrayList<>();
 
         if (isInCnf(expr)) {
             if (expr instanceof And) {
@@ -51,17 +49,20 @@ public class TseytinTransformer {
 
     private boolean isInCnf(BoolExpr expr) {
         if (expr instanceof And) {
-            return ((And) expr).getElements().stream().allMatch(e -> e instanceof BoolLiteral);
+            List<BoolExpr> ret = ExprSimplifier.toNAryAnd((And) expr);
+            return ret.stream().allMatch(it -> it instanceof BoolLiteral);
         }
         if (expr instanceof Or) {
-            return ((Or) expr).getElements().stream().allMatch(e -> e instanceof BoolLiteral);
+            List<BoolExpr> ret = ExprSimplifier.toNAryOr((Or) expr);
+            return ret.stream().allMatch(it -> it instanceof BoolLiteral);
         }
         return false;
     }
 
     private void addCnfAnd(And expr) {
 
-        for (BoolLiteral lit : expr.getElements().stream().map(e -> (BoolLiteral) e).collect(Collectors.toList())) {
+        for (BoolLiteral lit : ExprSimplifier.toNAryAnd(expr).stream()
+                .map(it -> (BoolLiteral) it).collect(Collectors.toList())) {
             CnfClause clause = new CnfClause();
             if (lit instanceof BinaryVar) {
                 clause.add((BinaryVar) lit);
@@ -70,7 +71,7 @@ public class TseytinTransformer {
             } else if (lit instanceof RelOp) {
                 BinaryVar var = varGen.newVar();
                 clause.add(var);
-                vars.put((RelOp) lit, var);
+                vars.put(lit, var);
                 varMapping.put(var, (RelOp) lit);
             } else {
                 throw new IllegalStateException("Unknown literal type.");
@@ -82,7 +83,9 @@ public class TseytinTransformer {
 
     private void addCnfOr(Or expr) {
         CnfClause clause = new CnfClause();
-        for (BoolLiteral lit : expr.getElements().stream().map(e -> (BoolLiteral) e).collect(Collectors.toList())) {
+
+        for (BoolLiteral lit : ExprSimplifier.toNAryOr(expr).stream()
+                .map(it -> (BoolLiteral) it).collect(Collectors.toList())) {
 
             if (lit instanceof BinaryVar) {
                 clause.add((BinaryVar) lit);
@@ -91,7 +94,7 @@ public class TseytinTransformer {
             } else if (lit instanceof RelOp) {
                 BinaryVar var = varGen.newVar();
                 clause.add(var);
-                vars.put((RelOp) lit, var);
+                vars.put(lit, var);
                 varMapping.put(var, (RelOp) lit);
             } else {
                 throw new IllegalStateException("Unknown literal type.");
@@ -101,6 +104,13 @@ public class TseytinTransformer {
         clauses.add(clause);
     }
 
+
+    @Override
+    public Map<BinaryVar, RelOp> getMapping() {
+        return varMapping;
+    }
+
+    @Override
     public List<CnfClause> getClauses() {
         return clauses;
     }
@@ -157,7 +167,7 @@ public class TseytinTransformer {
             vars.put(expr, x);
 
             List<BinaryVar> x_c = new LinkedList<>();
-            for (BoolExpr e : expr.getElements()) {
+            for (BoolExpr e : ExprSimplifier.toNAryAnd(expr)) {
                 BinaryVar y = vars.get(e);
                 if (y == null) {
                     y = e.accept(this);
@@ -187,8 +197,8 @@ public class TseytinTransformer {
             BinaryVar x = newVar();
             vars.put(expr, x);
 
-            List<BinaryVar> x_c = new LinkedList<BinaryVar>();
-            for (BoolExpr e : expr.getElements()) {
+            List<BinaryVar> x_c = new LinkedList<>();
+            for (BoolExpr e : ExprSimplifier.toNAryOr(expr)) {
                 BinaryVar y = vars.get(e);
                 if (y == null) {
                     y = e.accept(this);
@@ -333,19 +343,18 @@ public class TseytinTransformer {
 
         @Override
         public BinaryVar visit(BinaryVar expr) {
-            BinaryVar x = expr;
 
             // if no variable was created before, passed BinaryVar is root node of AST.
             // In this case CNF only consists of one variable
             if (varGen.isFirst()) {
                 CnfClause clause = new CnfClause();
-                clause.add(x);
+                clause.add(expr);
                 clauses.add(clause);
             }
 
-            vars.put(expr, x);
+            vars.put(expr, expr);
 
-            return x;
+            return expr;
         }
 
         @Override
@@ -367,5 +376,26 @@ public class TseytinTransformer {
         }
 
     }
+
+    private class BoolVarGen {
+
+        private final Model model;
+        private int counter = 0;
+
+        BoolVarGen(Model model) {
+            this.model = model;
+        }
+
+        BinaryVar newVar() {
+            counter++;
+            return model.newBinaryVar();
+        }
+
+        boolean isFirst() {
+            return counter == 0;
+        }
+
+    }
+
 
 }

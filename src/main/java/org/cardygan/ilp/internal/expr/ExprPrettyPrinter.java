@@ -3,17 +3,15 @@ package org.cardygan.ilp.internal.expr;
 import org.cardygan.ilp.api.model.*;
 import org.cardygan.ilp.api.model.bool.*;
 
-import java.util.stream.Collectors;
-
 public class ExprPrettyPrinter implements BoolExprVisitor<String>, ArithExprVisitor<String> {
     @Override
     public String visit(Sum expr) {
-        return "(" + expr.getSummands().stream().map(e -> e.accept(this)).collect(Collectors.joining(" + ")) + ")";
+        return "(" + expr.getLhs().accept(this) + " + " + expr.getRhs().accept(this) + ")";
     }
 
     @Override
     public String visit(Mult expr) {
-        return expr.getLeft().accept(this) + " " + expr.getRight().accept(this);
+        return expr.getLhs().accept(this) + " " + expr.getRhs().accept(this);
     }
 
     @Override
@@ -33,12 +31,12 @@ public class ExprPrettyPrinter implements BoolExprVisitor<String>, ArithExprVisi
 
     @Override
     public String visit(And expr) {
-        return expr.getElements().stream().map(e -> e.accept(this)).collect(Collectors.joining(" && "));
+        return "(" + expr.getLhs().accept(this) + " && " + expr.getRhs().accept(this) + ")";
     }
 
     @Override
     public String visit(Or expr) {
-        return "(" + expr.getElements().stream().map(e -> e.accept(this)).collect(Collectors.joining(" || ")) + ")";
+        return "(" + expr.getLhs().accept(this) + " || " + expr.getRhs().accept(this) + ")";
     }
 
     @Override

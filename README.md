@@ -21,4 +21,4 @@ export CPLEX_LIB_PATH=/Users/user1/Applications/IBM/ILOG/CPLEX_Studio1263/cplex/
 Additionally you need to put the solver specific JNI jar (`cplex.jar`) on the classpath.
 
 ## Usage
-See the class `src/test/java/org/cardygan/ilp/SampleApiUsage.java` for sample usage.
+See the class `src/test/java/org/cardygan/ilp/org.cardygan.ilp.api.SampleApiUsage.java` for sample usage.

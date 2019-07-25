@@ -9,10 +9,10 @@ env:
 build:
   ci:
   - mkdir tmp
-  - cp ext_lib/solver.tar.gpg tmp
+  - cp ext_lib/internal.tar.gpg tmp
   - cd tmp
-  - gpg --output solver.tar --yes --batch --decrypt --passphrase $UNZIP solver.tar.gpg
-  - tar -xvf solver.tar
+  - gpg --output internal.tar --yes --batch --decrypt --passphrase $UNZIP internal.tar.gpg
+  - tar -xvf internal.tar
   - cd ..
   - mkdir artifacts
   - cd artifacts

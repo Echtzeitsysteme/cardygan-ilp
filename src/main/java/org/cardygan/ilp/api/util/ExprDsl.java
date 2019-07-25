@@ -3,24 +3,44 @@ package org.cardygan.ilp.api.util;
 import org.cardygan.ilp.api.model.*;
 import org.cardygan.ilp.api.model.bool.*;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public final class ExprDsl {
 
-    public static And and(BoolExpr firstElem, BoolExpr... otherElems) {
-        return new And(firstElem, otherElems);
+//    /**
+//     * @param firstElem
+//     * @param otherElems
+//     * @return
+//     * @deprecated <p> Use {@link ExprDsl#and(BoolExpr...)}  instead.
+//     */
+//    @Deprecated
+//    public static And and(BoolExpr firstElem, BoolExpr... otherElems) {
+//        List<BoolExpr> ret = new ArrayList<>(otherElems.length + 1);
+//        ret.add(firstElem);
+//        ret.addAll(Arrays.asList(otherElems));
+//        return new And(ret);
+//    }
+
+    public static And and(BoolExpr... elems) {
+        return new And(elems);
     }
 
     public static And and(List<BoolExpr> elements) {
         return new And(elements);
     }
 
-    public static Sum sum(ArithExpr... summands) {
-        return new Sum(summands);
+    public static ArithExpr sum(ArithExpr... summands) {
+        return sum(Arrays.asList(summands));
     }
 
-    public static Sum sum(List<ArithExpr> summands) {
-        return sum(summands.toArray(new ArithExpr[summands.size()]));
+    public static ArithExpr sum(List<ArithExpr> summands) {
+        if (summands.size() == 0)
+            throw new IllegalArgumentException("At least one summand needs to be passed as parameter");
+        if (summands.size() == 1)
+            return summands.get(0);
+        return new Sum(summands);
     }
 
     public static Param param(double val) {
@@ -59,9 +79,24 @@ public final class ExprDsl {
         return new Or(e);
     }
 
-    public static Or or(BoolExpr e1, BoolExpr... es) {
-        return new Or(e1, es);
+//    /**
+//     * @param firstElem
+//     * @param otherElems
+//     * @return
+//     * @deprecated <p> Use {@link ExprDsl#or(BoolExpr...)}  instead.
+//     */
+//    @Deprecated
+//    public static Or or(BoolExpr firstElem, BoolExpr... otherElems) {
+//        List<BoolExpr> ret = new ArrayList<>(otherElems.length + 1);
+//        ret.add(firstElem);
+//        ret.addAll(Arrays.asList(otherElems));
+//        return new Or(ret);
+//    }
+
+    public static Or or(BoolExpr... elems) {
+        return new Or(elems);
     }
+
 
     public static Xor xor(BoolExpr lhs, BoolExpr rhs) {
         return new Xor(lhs, rhs);

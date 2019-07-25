@@ -2,100 +2,56 @@ package org.cardygan.ilp.api.model;
 
 import org.cardygan.ilp.api.Result;
 import org.cardygan.ilp.api.model.bool.BoolExpr;
-import org.cardygan.ilp.api.model.bool.RelOp;
-import org.cardygan.ilp.api.solver.Solver;
+import org.cardygan.ilp.internal.solver.IdGen;
+import org.cardygan.ilp.internal.solver.Solver;
+import org.cardygan.ilp.internal.solver.VarIdGen;
+import org.cardygan.ilp.internal.util.Util;
 
-import java.util.*;
+import static org.cardygan.ilp.internal.solver.Solver.VarType.*;
+
 
 public class Model {
 
-    public final static String VARIABLE_PREFIX = "v";
+    private final IdGen varIdGen;
+    private final Solver problem;
 
-    public final static double EPSILON = 0.0001;
-    private final List<Constraint> constraints;
-    private Objective objective;
-    private Integer m;
-    private int counter = 0;
-    private final Map<String, Var> vars;
-    private final Map<DoubleVar, DblBounds> dblBounds;
-    private final Map<IntVar, IntBounds> intBounds;
-    private final List<Sos1Constraint> sos1;
+    public Model(Solver solver) {
+        this.problem = solver;
+        this.varIdGen = new VarIdGen(solver);
 
-    private Model(Map<String, Var> vars,
-                  Map<DoubleVar, DblBounds> dblBounds,
-                  Map<IntVar, IntBounds> intBounds,
-                  List<Sos1Constraint> sos1,
-                  List<Constraint> constraints,
-                  Integer m,
-                  Objective objective) {
-        this.vars = new HashMap<>(vars);
-        this.dblBounds = new HashMap<>(dblBounds);
-        this.intBounds = new HashMap<>(intBounds);
-        this.constraints = new ArrayList<>(constraints);
-        this.sos1 = new ArrayList<>(sos1);
-        this.m = m;
-        this.objective = objective;
     }
 
-    public Model() {
-        vars = new HashMap<>();
-        dblBounds = new HashMap<>();
-        intBounds = new HashMap<>();
-        constraints = new ArrayList<>();
-        sos1 = new ArrayList<>();
-        m = null;
+    public void dispose() {
+        problem.dispose();
+    }
+
+    public boolean isDiposed() {
+        return problem.isDisposed();
+    }
+
+    public Constraint[] newConstraint(BoolExpr expr) {
+        Util.assertNotNull(expr);
+
+        return problem.newConstraint(this, null, expr);
+    }
+
+    public Constraint[] newConstraint(String name, BoolExpr expr) {
+        Util.assertNotNull(name, expr);
+
+        return problem.newConstraint(this, name, expr);
     }
 
 
-    public Map<String, Var> getVars() {
-        return Collections.unmodifiableMap(vars);
-    }
+    private IntVar newIntVarInternal(String name, int lb, int ub) {
+        final String varName = varIdGen.checkOrGenNewIfNull(name);
 
-    public Optional<Objective> getObjective() {
-        return Optional.ofNullable(objective);
-    }
 
-    public List<Sos1Constraint> getSos1() {
-        return Collections.unmodifiableList(sos1);
-    }
+        problem.addVar(varName, lb, ub, INT);
 
-    public List<Constraint> getConstraints() {
-        return Collections.unmodifiableList(constraints);
-    }
 
-    @Override
-    public String toString() {
-        StringBuffer ret = new StringBuffer();
-        constraints.forEach(c -> ret.append(c + "\n"));
-        return ret.toString();
-    }
-
-    public Constraint newConstraint(BoolExpr expr) {
-        Constraint cstr = new Constraint(expr);
-        constraints.add(cstr);
-        return cstr;
-    }
-
-    public Constraint newConstraint(String name, BoolExpr expr) {
-        Constraint cstr = new Constraint(name, expr);
-        constraints.add(cstr);
-        return cstr;
-    }
-
-    public DblBounds getBounds(DoubleVar var) {
-        return dblBounds.get(var);
-    }
-
-    public IntBounds getBounds(IntVar var) {
-        return intBounds.get(var);
-    }
-
-    public Map<DoubleVar, DblBounds> getDblBounds() {
-        return Collections.unmodifiableMap(dblBounds);
-    }
-
-    public Map<IntVar, IntBounds> getIntBounds() {
-        return Collections.unmodifiableMap(intBounds);
+        // TODO add caching mechanism
+        IntVar var = new IntVar(varName);
+        return var;
     }
 
 
@@ -106,12 +62,7 @@ public class Model {
      * @return
      */
     public IntVar newIntVar(String name) {
-        if (vars.containsKey(name)) {
-            throw new IllegalStateException("Variable with name " + name + " already defined.");
-        }
-        IntVar var = new IntVar(name);
-        vars.put(name, var);
-        return var;
+        return newIntVarInternal(name, -1, -1);
     }
 
     /**
@@ -121,13 +72,8 @@ public class Model {
      * @return
      */
     public IntVar newIntVar(String name, int lb, int ub) {
-        if (vars.containsKey(name)) {
-            throw new IllegalStateException("Variable with name " + name + " already defined.");
-        }
-        IntVar var = new IntVar(name);
-        vars.put(name, var);
-        intBounds.put(var, new IntBounds(lb, ub));
-        return var;
+        Util.assertTrue(lb >= 0);
+        return newIntVarInternal(name, lb, ub);
     }
 
     /**
@@ -137,13 +83,8 @@ public class Model {
      * @return
      */
     public IntVar newIntVar(String name, int lb) {
-        if (vars.containsKey(name)) {
-            throw new IllegalStateException("Variable with name " + name + " already defined.");
-        }
-        IntVar var = new IntVar(name);
-        vars.put(name, var);
-        intBounds.put(var, new IntBounds(lb, -1));
-        return var;
+        Util.assertTrue(lb >= 0);
+        return newIntVarInternal(name, lb, -1);
     }
 
     /**
@@ -153,32 +94,19 @@ public class Model {
      * @return
      */
     public IntVar newIntVar(int lb) {
-        IntVar var = newIntVar();
-        intBounds.put(var, new IntBounds(lb, -1));
-        return var;
+        Util.assertTrue(lb >= 0);
+        return newIntVarInternal(null, lb, -1);
     }
 
     /**
-     * Creates new variable of given type with an unique name id.
+     * Creates new variable of given val with an unique name id.
      *
      * @return
      */
     public IntVar newIntVar() {
-        while (vars.containsKey(VARIABLE_PREFIX + counter)) {
-            counter++;
-        }
-
-        return newIntVar(VARIABLE_PREFIX + counter);
+        return newIntVarInternal(null, -1, -1);
     }
 
-
-    public void newSos1(List<Var> vars) {
-        sos1.add(new Sos1Constraint(vars));
-    }
-
-    public void newSos1(Map<Var, Double> elements) {
-        sos1.add(new Sos1Constraint(elements));
-    }
 
     /**
      * Creates new decision variable with given name.
@@ -186,13 +114,25 @@ public class Model {
      * @param name
      * @return
      */
-    public BinaryVar newBinaryVar(String name) {
-        if (vars.containsKey(name)) {
-            throw new IllegalStateException("Variable with name " + name + " already defined.");
-        }
-        BinaryVar var = new BinaryVar(name);
-        vars.put(name, var);
-        return var;
+    public BinaryVar newBinaryVar(final String name) {
+        Util.assertNotNull(name);
+
+        final String varName = varIdGen.checkOrGenNewIfNull(name);
+
+        problem.addVar(varName, -1, -1, BIN);
+
+        return new BinaryVar(varName);
+    }
+
+    /**
+     * Creates new variable of given val with an unique name id.
+     *
+     * @return
+     */
+    public BinaryVar newBinaryVar() {
+        final String varName = varIdGen.genNew();
+
+        return newBinaryVar(varName);
     }
 
     /**
@@ -201,11 +141,7 @@ public class Model {
      * @return
      */
     public DoubleVar newDoubleVar() {
-        while (vars.containsKey(VARIABLE_PREFIX + counter)) {
-            counter++;
-        }
-
-        return newDoubleVar(VARIABLE_PREFIX + counter);
+        return newDoublVarInternal(null, -1, -1);
     }
 
     /**
@@ -215,12 +151,8 @@ public class Model {
      * @return
      */
     public DoubleVar newDoubleVar(String name) {
-        if (vars.containsKey(name)) {
-            throw new IllegalStateException("Variable with name " + name + " already defined.");
-        }
-        DoubleVar var = new DoubleVar(name);
-        vars.put(name, var);
-        return var;
+        Util.assertNotNull(name);
+        return newDoublVarInternal(name, -1, -1);
     }
 
     /**
@@ -232,13 +164,9 @@ public class Model {
      * @return
      */
     public DoubleVar newDoubleVar(String name, double lb, double ub) {
-        if (vars.containsKey(name)) {
-            throw new IllegalStateException("Variable with name " + name + " already defined.");
-        }
-        DoubleVar var = new DoubleVar(name);
-        vars.put(name, var);
-        dblBounds.put(var, new DblBounds(lb, ub));
-        return var;
+        Util.assertNotNull(name);
+        Util.assertTrue(lb >= 0);
+        return newDoublVarInternal(name, lb, ub);
     }
 
     /**
@@ -249,82 +177,61 @@ public class Model {
      * @return
      */
     public DoubleVar newDoubleVar(String name, double lb) {
-        if (vars.containsKey(name)) {
-            throw new IllegalStateException("Variable with name " + name + " already defined.");
-        }
-        DoubleVar var = new DoubleVar(name);
-        vars.put(name, var);
-        dblBounds.put(var, new DblBounds(lb, -1));
-        return var;
+        return newDoubleVar(name, lb, -1);
     }
 
-//    public void removeVar(Var var) {
-//        vars.remove(var.getName());
-//    }
+    private DoubleVar newDoublVarInternal(String name, double lb, double ub) {
+        final String varName = varIdGen.checkOrGenNewIfNull(name);
+
+        problem.addVar(varName, lb, ub, DBL);
+
+        // TODO add caching mechanism
+        return new DoubleVar(varName);
+    }
+
+    public boolean hasVar(String name) {
+        return problem.hasVar(name);
+    }
+
+
+    public double getVal(Var var) {
+        // TODO check malfunction
+        return problem.getVal(var);
+    }
+
+    public double getObjVal() {
+        // TODO check if not yet optimized
+        return problem.getObjVal();
+    }
+
+
+    public void newObjective(boolean maximize, ArithExpr expr) {
+        problem.newObjective(maximize, expr);
+    }
+
+    public void removeConstraint(Constraint cstr) {
+        problem.removeConstr(cstr);
+    }
+
+    public Result optimize() {
+        return problem.optimize();
+    }
 
     /**
-     * Creates new variable of given type with an unique name id.
+     * Returns the number of variables that are contained in the model.
      *
-     * @return
+     * @return the number of variables
      */
-    public BinaryVar newBinaryVar() {
-        while (vars.containsKey(VARIABLE_PREFIX + counter)) {
-            counter++;
-        }
-
-        return newBinaryVar(VARIABLE_PREFIX + counter);
+    public int getNumVars() {
+        return problem.getNumVars();
     }
 
-    private boolean varInList(String varName, List<Var> vars) {
-        return vars.stream().filter(e -> e.getName().equals(varName)).findAny().isPresent();
+    /**
+     * Returns the number of constraints that are contained in the model.
+     *
+     * @return the number of constraints
+     */
+    public int getNumConstrs() {
+        return problem.getNumConstrs();
     }
-
-    public Objective newObjective(boolean maximize, ArithExpr expr) {
-        objective = new Objective(maximize, expr);
-        return objective;
-    }
-
-    public Result solve(Solver solver) {
-//        if (objective == null) {
-//            // add dummy empty objective
-//            newObjective(true, new Sum());
-//        }
-
-        return solver.solve(this);
-    }
-
-    public Model copy(List<Constraint> constraints) {
-        return new Model(vars,
-                dblBounds,
-                intBounds,
-                sos1,
-                constraints,
-                m,
-                objective);
-    }
-
-    public Model copy() {
-        return new Model(vars,
-                dblBounds,
-                intBounds,
-                sos1,
-                constraints,
-                m,
-                objective);
-    }
-
-    public Optional<Integer> getM(RelOp expr) {
-        //TODO implement relOp specific BigM retrieval
-        return getM();
-    }
-
-    public Optional<Integer> getM() {
-        return Optional.ofNullable(m);
-    }
-
-    public void setM(int m) {
-        this.m = m;
-    }
-
-
 }

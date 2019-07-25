@@ -5,6 +5,7 @@ import org.cardygan.ilp.api.model.BinaryVar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class CnfClause {
@@ -44,6 +45,19 @@ public class CnfClause {
      */
     public void addAll(List<BinaryVar> x_c) {
         x_c.forEach(x -> vars.put(x, false));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CnfClause cnfClause = (CnfClause) o;
+        return vars.equals(cnfClause.vars);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(vars);
     }
 
     @Override
