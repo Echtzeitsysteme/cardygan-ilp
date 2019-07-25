@@ -1,5 +1,5 @@
 group 'org.cardygan'
-version '0.2.6'
+version '0.3.0'
 
 apply plugin: 'java'
 apply plugin: 'maven-publish'
@@ -40,20 +40,4 @@ dependencies {
     compile group: 'org.gnu.glpk', name: 'glpk-java', version: '1.7.0'
     compile group: 'org.choco-solver', name: 'choco-solver', version: '4.10.1'
     compile files(cplexJarPath, gurobiJarPath)
-
-}
-
-
-generateGrammarSource {
-    maxHeapSize = "64m"
-    arguments += ["-visitor", "-long-messages", "-package", "org.cardygan.ilp.internal.persist.antlr"]
-}
-
-generateGrammarSource << {
-    println "Copying generated grammar lexer/parser files to main directory."
-    copy {
-        from "${buildDir}/generated-src/antlr/main"
-        into "src/main/java/org/cardygan/ilp/internal/persist/antlr"
-    }
-    delete "${buildDir}/generated-src/antlr/"
 }
