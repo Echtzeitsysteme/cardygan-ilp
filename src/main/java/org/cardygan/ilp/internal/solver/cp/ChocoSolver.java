@@ -6,6 +6,8 @@ import org.cardygan.ilp.api.model.BinaryVar;
 import org.cardygan.ilp.api.model.Var;
 import org.cardygan.ilp.api.model.bool.*;
 import org.cardygan.ilp.internal.expr.ExprSimplifier;
+import org.cardygan.ilp.internal.solver.milp.MILPConstrGenerator;
+import org.cardygan.ilp.internal.solver.milp.GurobiSolver.GurobiSolverBuilder;
 import org.cardygan.ilp.internal.expr.BoolExprVisitor;
 import org.cardygan.ilp.internal.util.ModelException;
 import org.cardygan.ilp.internal.util.Util;
@@ -299,4 +301,30 @@ public class ChocoSolver implements org.cardygan.ilp.internal.solver.Solver {
             throw new IllegalStateException("Double parameters not supported.");
         return new Double(val).intValue();
     }
+    
+    /**
+     * This class represents an implementation of the SolverBuilder for the Choco Solver.
+     * 
+     * @author Maximilian Kratz <maximilian.kratz@stud.tu-darmstadt.de>
+     *
+     */
+    public static class ChocoSolverBuilder implements SolverBuilder {
+    	private final int objLb;
+    	private final int objUb;
+    	
+    	/**
+    	 * Constructor for initializing all parameters.
+    	 * @param objLb Lower bound.
+    	 * @param objUb Upper bound.
+    	 */
+		public ChocoSolverBuilder(int objLb, int objUb) {
+			this.objLb = objLb;
+			this.objUb = objUb;
+		}
+
+		@Override
+		public org.cardygan.ilp.internal.solver.Solver build() {
+			return new ChocoSolver(objLb, objUb);
+		}
+	}
 }

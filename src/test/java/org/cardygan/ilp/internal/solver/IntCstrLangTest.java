@@ -3,6 +3,7 @@ package org.cardygan.ilp.internal.solver;
 import org.cardygan.ilp.api.Result;
 import org.cardygan.ilp.api.model.IntVar;
 import org.cardygan.ilp.api.model.Model;
+import org.cardygan.ilp.internal.solver.cp.ChocoSolver;
 import org.cardygan.ilp.internal.solver.milp.BigMBasedCstrGenerator;
 import org.cardygan.ilp.internal.solver.milp.GurobiSolver;
 import org.cardygan.ilp.internal.solver.milp.SosBasedCstrGenerator;
@@ -26,7 +27,9 @@ public class IntCstrLangTest {
     public static Collection<Object[]> data() {
         return Arrays.asList(
                 new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new SosBasedCstrGenerator())},
-                new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new BigMBasedCstrGenerator(1000))}
+                new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new BigMBasedCstrGenerator(1000))},
+                // TODO: Which bounds to choose?
+                new Solver.SolverBuilder[]{new ChocoSolver.ChocoSolverBuilder(-100, 100)}
         );
     }
 
