@@ -47,7 +47,7 @@ public class CplexSolver extends MILPSolver {
 			this.init();
 		} catch (IloException e) {
 			e.printStackTrace();
-			throw new InternalError("Build of CplexSolver failed!");
+			throw new IllegalStateException("Could not initialize CPLEX backend.");
 		}
 	}
 
@@ -130,7 +130,7 @@ public class CplexSolver extends MILPSolver {
 	        }
         } catch (IloException ex) {
     		ex.printStackTrace();
-    		throw new InternalError("IloException was thrown in method 'addCstr()'!");
+            throw new IllegalStateException("Could not add constraint to CPLEX model.");
     	} catch (NullPointerException ex) {
     		throw new ModelException("NullPointer in method 'addCstr()'!");
     	}
@@ -171,7 +171,7 @@ public class CplexSolver extends MILPSolver {
 	    	this.solver.add(iloObj);
     	} catch (IloException ex) {
     		ex.printStackTrace();
-    		throw new InternalError("IloException was thrown in method 'addCstr()'!");
+            throw new IllegalStateException("Could not add objective to CPLEX model.");
     	} catch (NullPointerException ex) {
     		throw new ModelException("There was a NullPointerException thrown in the cplex backend!");
     	}
@@ -246,7 +246,7 @@ public class CplexSolver extends MILPSolver {
 	        return new Result(status, start - end);
 		} catch (IloException e) {
 			e.printStackTrace();
-			throw new RuntimeException("Error in internal Run ");
+			throw new IllegalStateException("Error in internal Run ");
 		}
     }
 
@@ -270,7 +270,7 @@ public class CplexSolver extends MILPSolver {
 			return this.solver.getValue(iloVar);
 		} catch (IloException e) {
 			e.printStackTrace();
-			throw new InternalError("IloException was thrown in method 'getVal()'!");
+            throw new IllegalStateException("Could not add retrieve value for variable.");
 		}
     }
 
@@ -284,7 +284,7 @@ public class CplexSolver extends MILPSolver {
 			return this.solver.getValue(expr);
 		} catch (IloException e) {
 			e.printStackTrace();
-			throw new InternalError("IloException was thrown in method 'getObjVal()'!");
+            throw new IllegalStateException("Could not add retrieve value for objective.");
 		}
     }
 
@@ -296,7 +296,7 @@ public class CplexSolver extends MILPSolver {
 			return this.solver.getModel();
 		} catch (IloException e) {
 			e.printStackTrace();
-			throw new InternalError("IloException was thrown in method 'getUnterlyingModel()'!");
+            throw new IllegalStateException("Could not add retrieve underlying model.");
 		}
     }
 
@@ -343,7 +343,7 @@ public class CplexSolver extends MILPSolver {
 			}
 		} catch (IloException e) {
 			e.printStackTrace();
-			throw new InternalError("IloException in method 'addVar()'!");
+            throw new IllegalStateException("Could not add variable name to CPLEX model.");
 		}
     }
 
@@ -372,7 +372,7 @@ public class CplexSolver extends MILPSolver {
 	    		}
 			} catch (IloException e) {
 				e.printStackTrace();
-				throw new InternalError("IloException thrown in getNumVars()-method!");
+	            throw new IllegalStateException("This should not occur.");
 			}    		
     	}
 
@@ -601,7 +601,7 @@ public class CplexSolver extends MILPSolver {
         	}
         } catch (IloException ex) {
         	ex.printStackTrace();
-        	throw new InternalError("Could not initialize cplex backend!");
+            throw new IllegalStateException("Could not initialize CPLEX backend.");
         }
     }
     
