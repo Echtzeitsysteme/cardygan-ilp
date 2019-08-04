@@ -36,14 +36,8 @@ public class CplexSolver extends MILPSolver {
 	/*
 	 * Variables
 	 */
-	// TODO:
-//	private ilog.concert.IloModel cplexModel;
 	private IloCplex solver;
 	private boolean disposed;
-	
-	// TODO: Remove this?
-	// Set for tracking added SOS constraints.
-	// private Map<String, ilog.concert.IloSOS1> addedSos = new HashMap<>();
 	
 	/**
 	 * Constructor for initializing an object.
@@ -121,18 +115,14 @@ public class CplexSolver extends MILPSolver {
 				}
 	    		
 	        	switch(type) {
-	        	// TODO: Clean up
 	    		case EQ:
 					this.solver.addEq(lhs, rhs, name);
-//	    			this.solver.addEq(rhs, lhs, name);
 	    			break;
 	    		case GEQ:
 	    			this.solver.addGe(lhs, rhs, name);
-//	    			this.solver.addGe(rhs, lhs, name);
 	    			break;
 	    		case LEQ:
 	    			this.solver.addLe(lhs, rhs, name);
-//	    			this.solver.addLe(rhs, lhs, name);
 	    			break;
 	    		default:
 	    			throw new InternalError("Type of provided constraint is not 'EQ', 'GEQ', 'LEQ' nor 'SOS', which is not supported!");
@@ -210,12 +200,8 @@ public class CplexSolver extends MILPSolver {
     		}
 		} catch (IloException e) {
 			e.printStackTrace();
-			throw new InternalError("IloException was thrown in method 'removeCstr()'!");
-			// TODO: ?
-			// throw new ModelException("Could not find constraint with name " + constraint.getName());
+			throw new ModelException("Could not remove constraint with name " + constraint.getName());
 		}
-    	
-    	// TODO: If you ever decide to add an addedSOS-collection to this class: Remove constraint from there it it is contained ;)!
     }
 
     @Override
@@ -224,7 +210,7 @@ public class CplexSolver extends MILPSolver {
     	
         try {
             final long start = System.nanoTime();
-			boolean success = this.solver.solve();
+			this.solver.solve();
 	        final long end = System.nanoTime();
 	        
 	        // Get status from solver
@@ -266,9 +252,6 @@ public class CplexSolver extends MILPSolver {
 
     @Override
     public void dispose() {
-    	// TODO
-    	// throw new InternalError("The method 'dispose' is not implemented yet!");
-    	
     	this.solver.end();
     	this.disposed = true;
     }
@@ -309,8 +292,6 @@ public class CplexSolver extends MILPSolver {
     public Object getUnderlyingModel() {
         checkIsDisposed();
 
-        // TODO:
-        // return this.cplexModel;
         try {
 			return this.solver.getModel();
 		} catch (IloException e) {
@@ -329,26 +310,7 @@ public class CplexSolver extends MILPSolver {
     		throw new NullPointerException("Provided parameter 'type' was invalid!");
     	}
     	
-    	// TODO: Old stuff:
-    	/*
-    	 * INTEGER
-    	 * BINARY
-    	 * DOUBLE
-    	 */
-    	
-    	// Switch-case for type
-//    	switch(type) {
-//    	case INT:
-//    		break;
-//		case BIN:
-//			break;
-//		case DBL:
-//			break;
-//		default:
-//			throw new UnsupportedOperationException("The type of the enum 'type' was not 'INT', 'BIN' nor 'DBL', which is not supported by this method!");
-//    	}
-    	
-    	// TODO
+    	// CPLEX does not need to know of which type the new variable is ...
     	this.addVar(name, lb, ub);
     }
     
@@ -374,7 +336,6 @@ public class CplexSolver extends MILPSolver {
 
 		try {
 			IloNumVar newVar = this.solver.numVar(lb, ub, name);
-			// TODO: Right way of adding the new variable?
 			IloAddable ret = this.solver.add(newVar);
 			
 			if(ret == null) {
@@ -392,7 +353,7 @@ public class CplexSolver extends MILPSolver {
     	int counter = 0;
     	
     	// Get iterator for model (constraints)
-    	Iterator<IloRange> cplexIt = this.solver.rangeIterator();
+    	Iterator<?> cplexIt = this.solver.rangeIterator();
     	
     	// Iterate over constraints
     	while(cplexIt.hasNext()) {
@@ -403,8 +364,8 @@ public class CplexSolver extends MILPSolver {
 				
 	    		// Iterate over variables in constraint
 	    		while(linearIt.hasNext()) {
-	    			// Get next num var (so that iterator sets pointer to next object)
-	    			IloNumVar var = linearIt.nextNumVar();
+	    			// Get next numerical variable (so that iterator sets pointer to next object)
+	    			linearIt.nextNumVar();
 	    			
 	    			// Increment counter
 	    			counter++;
@@ -423,12 +384,12 @@ public class CplexSolver extends MILPSolver {
     	int counter = 0;
     	
     	// Get iterator for model (constraints)
-    	Iterator<IloRange> cplexIt = this.solver.rangeIterator();
+    	Iterator<?> cplexIt = this.solver.rangeIterator();
     	
     	// Iterate over constraints
     	while(cplexIt.hasNext()) {
     		// Get next constraint (so that iterator sets pointer to next object)
-    		IloRange range = (IloRange) cplexIt.next();
+    		cplexIt.next();
     		
     		// Increment counter
     		counter++;
@@ -469,8 +430,6 @@ public class CplexSolver extends MILPSolver {
      * @throws IloException If something goes wrong.
      */
     private void init() throws IloException {
-    	// TODO:
-    	// this.cplexModel = new IloCplexModeler();
     	this.solver = new IloCplex();
     }
     
@@ -495,7 +454,7 @@ public class CplexSolver extends MILPSolver {
          * Normal constraints:
          */
         // Get iterator for model (constraints)
-    	Iterator<IloRange> cplexIt = this.solver.rangeIterator();
+    	Iterator<?> cplexIt = this.solver.rangeIterator();
     	
     	// Iterate over constraints
     	while(cplexIt.hasNext()) {
@@ -511,7 +470,7 @@ public class CplexSolver extends MILPSolver {
     	 * SOS1 constraints:
     	 */
     	// Get iterator for model (sos1 constraints)
-    	Iterator cplexItSos1 = this.solver.SOS1iterator();
+    	Iterator<?> cplexItSos1 = this.solver.SOS1iterator();
     	
     	// Iterate over constraints
     	while(cplexItSos1.hasNext()) {
@@ -530,7 +489,7 @@ public class CplexSolver extends MILPSolver {
     	 * SOS2 constraints:
     	 */
     	// Get iterator for model (sos2 constraints)
-    	Iterator cplexItSos2 = this.solver.SOS2iterator();
+    	Iterator<?> cplexItSos2 = this.solver.SOS2iterator();
     	
     	// Iterate over constraints
     	while(cplexItSos2.hasNext()) {
@@ -556,16 +515,12 @@ public class CplexSolver extends MILPSolver {
      */
     private IloNumVar retrieveVar(final String varName) {
         checkIsDisposed();
-        
-        // TODO: Clean up in this method!!!
-        
+    
     	// Get iterator for model (constraints)
-//    	Iterator<IloRange> cplexIt = this.solver.rangeIterator();
         Iterator<?> cplexIt = this.solver.iterator();
 
         // Iterate over constraints
     	while(cplexIt.hasNext()) {
-//    		System.out.println("class: " + cplexIt.next().getClass().getName());
     		Object next = cplexIt.next();
     		
     		if(next instanceof CpxNumVar) {
@@ -573,26 +528,7 @@ public class CplexSolver extends MILPSolver {
     			if(var.getName().equals(varName)) {
     				return var;
     			}
-    		}
-    		
-//    		IloRange range = (IloRange) cplexIt.next();
-//    		IloLinearNumExprIterator linearIt;
-//			try {
-//				linearIt = ((IloLinearNumExpr) range.getExpr()).linearIterator();
-//				
-//	    		// Iterate over variables in constraint
-//	    		while(linearIt.hasNext()) {
-//	    			IloNumVar var = linearIt.nextNumVar();
-//	    			
-//	    			// Check if variable has correct name
-//	    			if(var.getName().equals(varName)) {
-//	    				return var;
-//	    			}
-//	    		}
-//			} catch (IloException e) {
-//				e.printStackTrace();
-//				throw new InternalError("IloException thrown in hasVar()-method!");
-//			}    		
+    		}  		
     	}
     	
     	// If nothing is found, return null
@@ -600,14 +536,14 @@ public class CplexSolver extends MILPSolver {
     }
     
     /**
-     * Initializes the cplex solver backend.
+     * Initializes the CPLEX solver backend.
      * 
-     * @param presolve True if cplex should use presolving.
-     * @param logging True if cplex should log to console.
+     * @param presolve True if CPLEX should use presolving.
+     * @param logging True if CPLEX should log to console.
      * @param timeout Time limit in timeoutUnit.
      * @param timeoutUnit Time out unit.
      * @param seed Random seed value.
-     * @param libPath Library path for cplex (as String).
+     * @param libPath Library path for CPLEX (as String).
      */
     private void init(boolean presolve, boolean logging, long timeout, TimeUnit timeoutUnit, int seed, String libPath) {
         if (libPath != null && libPath.length() != 0) {
@@ -615,8 +551,6 @@ public class CplexSolver extends MILPSolver {
         }
         
         try {
-        	// TODO
-        	// this.cplexModel = new IloCplexModeler();
         	this.solver = new IloCplex();
         	
         	// Setup logging
@@ -692,7 +626,7 @@ public class CplexSolver extends MILPSolver {
      */
     
     /**
-     * Implementation of the interface SolverBuilder specified for cplex backend.
+     * Implementation of the interface SolverBuilder specified for CPLEX backend.
      * 
      * @author Maximilian Kratz <maximilian.kratz@stud.tu-darmstadt.de>
      *
