@@ -26,16 +26,10 @@ import java.util.List;
 public class MILPSolverTest {
 
     private MILPSolver sut;
-
-    // TODO: Besser als parametrisierten Test auch mit CPlexSolver!!!
     
     @Parameterized.Parameters
     public static List<MILPSolver> data() {
         return Arrays.asList(
-//                new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new SosBasedCstrGenerator())},
-//                new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new BigMBasedCstrGenerator(1000))},
-//                // TODO: Which bounds to choose?
-//                new Solver.SolverBuilder[]{new ChocoSolver.ChocoSolverBuilder(-100, 100)}
         		new GurobiSolver(),
         		new CplexSolver()
 
@@ -57,12 +51,6 @@ public class MILPSolverTest {
 			throw new InternalError("Instantiation of sut object failed!");
 		}
     }
-    
-//    @Before
-//    public void setup() {
-//      sut = new GurobiSolver();
-//    	sut = new CplexSolver();
-//    }
 
     @Test
     public void optimize() {
