@@ -1,6 +1,8 @@
 package org.cardygan.ilp.internal.solver.milp;
 
 import gurobi.GRBModel;
+import ilog.concert.IloModel;
+
 import org.cardygan.ilp.api.Result;
 import org.cardygan.ilp.api.model.Constraint;
 import org.cardygan.ilp.api.model.IntVar;
@@ -10,19 +12,57 @@ import org.cardygan.ilp.internal.solver.Solver;
 import org.cardygan.ilp.internal.util.ModelException;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import java.util.Arrays;
+import java.util.List;
+
+@RunWith(Parameterized.class)
 public class MILPSolverTest {
 
     private MILPSolver sut;
 
+    // TODO: Besser als parametrisierten Test auch mit CPlexSolver!!!
+    
+    @Parameterized.Parameters
+    public static List<MILPSolver> data() {
+        return Arrays.asList(
+//                new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new SosBasedCstrGenerator())},
+//                new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new BigMBasedCstrGenerator(1000))},
+//                // TODO: Which bounds to choose?
+//                new Solver.SolverBuilder[]{new ChocoSolver.ChocoSolverBuilder(-100, 100)}
+        		new GurobiSolver(),
+        		new CplexSolver()
+
+        );
+    }
+    
+    public MILPSolverTest(MILPSolver solver) {
+		this.sut = solver;
+	}
+    
+    // TODO: This is not an elegant coding style ...
     @Before
     public void setup() {
-        sut = new GurobiSolver();
+    	// Find type of solver implementation and create new object
+    	try {
+			sut = sut.getClass().newInstance();
+		} catch (InstantiationException | IllegalAccessException e) {
+			e.printStackTrace();
+			throw new InternalError("Instantiation of sut object failed!");
+		}
     }
+    
+//    @Before
+//    public void setup() {
+//      sut = new GurobiSolver();
+//    	sut = new CplexSolver();
+//    }
 
     @Test
     public void optimize() {
@@ -81,6 +121,9 @@ public class MILPSolverTest {
     public void getUnderlyingModel() {
         if (sut instanceof GurobiSolver)
             assertTrue(sut.getUnderlyingModel() instanceof GRBModel);
+        
+        if (sut instanceof CplexSolver)
+        	assertTrue(sut.getUnderlyingModel() instanceof IloModel);
     }
 
     @Test
@@ -253,6 +296,5 @@ public class MILPSolverTest {
         } catch (ModelException ignored) {
 
         }
-
     }
 }

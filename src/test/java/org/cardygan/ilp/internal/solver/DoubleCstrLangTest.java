@@ -6,6 +6,7 @@ import org.cardygan.ilp.api.model.DoubleVar;
 import org.cardygan.ilp.api.model.Model;
 import org.cardygan.ilp.api.model.Var;
 import org.cardygan.ilp.internal.solver.milp.BigMBasedCstrGenerator;
+import org.cardygan.ilp.internal.solver.milp.CplexSolver;
 import org.cardygan.ilp.internal.solver.milp.GurobiSolver;
 import org.cardygan.ilp.internal.solver.milp.SosBasedCstrGenerator;
 import org.junit.Test;
@@ -30,6 +31,9 @@ public class DoubleCstrLangTest {
         return Arrays.asList(
                 new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new SosBasedCstrGenerator())},
                 new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new BigMBasedCstrGenerator(1000))}
+//                ,
+//                new Solver.SolverBuilder[]{new CplexSolver.CplexSolverBuilder().withMILPConstrGenerator(new SosBasedCstrGenerator())},
+//                new Solver.SolverBuilder[]{new CplexSolver.CplexSolverBuilder().withMILPConstrGenerator(new BigMBasedCstrGenerator(1000))}
         );
     }
 
