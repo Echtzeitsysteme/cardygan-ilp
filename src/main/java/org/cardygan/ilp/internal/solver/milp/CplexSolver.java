@@ -11,7 +11,6 @@ import org.cardygan.ilp.internal.solver.milp.LinearConstr.Type;
 import org.cardygan.ilp.internal.util.LibraryUtil;
 import org.cardygan.ilp.internal.util.ModelException;
 
-import gurobi.GRB;
 import ilog.concert.IloAddable;
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
@@ -43,7 +42,7 @@ public class CplexSolver extends MILPSolver {
      */
     public CplexSolver() {
         try {
-            this.init();
+            init();
         } catch (IloException e) {
             e.printStackTrace();
             throw new IllegalStateException("Could not initialize CPLEX backend.");
@@ -77,7 +76,7 @@ public class CplexSolver extends MILPSolver {
             throw new NullPointerException("Provided parameter 'cstr' was invalid!");
         }
 
-        if (this.hasConstraint(name)) {
+        if (hasConstraint(name)) {
             throw new ModelException("Constraint with given name already exists in model!");
         }
 
@@ -96,32 +95,32 @@ public class CplexSolver extends MILPSolver {
                 for (int i = 0; i < vars.length; i++) {
                     String varName = vars[i].getName();
 
-                    numVars[i] = this.retrieveVar(varName);
+                    numVars[i] = retrieveVar(varName);
                 }
 
-                IloAddable ret = this.solver.addSOS1(numVars, params, name);
+                IloAddable ret = solver.addSOS1(numVars, params, name);
 
                 if (ret == null) {
                     throw new IloException("SOS1 constraint was not added to model correctly!");
                 }
             } else {
                 final double rhs = cstr.getRhs();
-                IloLinearNumExpr lhs = this.solver.linearNumExpr();
+                IloLinearNumExpr lhs = solver.linearNumExpr();
 
                 for (int i = 0; i < params.length; i++) {
-                    IloNumVar var = this.retrieveVar(vars[i].getName());
+                    IloNumVar var = retrieveVar(vars[i].getName());
                     lhs.addTerm(var, params[i]);
                 }
 
                 switch (type) {
                     case EQ:
-                        this.solver.addEq(lhs, rhs, name);
+                        solver.addEq(lhs, rhs, name);
                         break;
                     case GEQ:
-                        this.solver.addGe(lhs, rhs, name);
+                        solver.addGe(lhs, rhs, name);
                         break;
                     case LEQ:
-                        this.solver.addLe(lhs, rhs, name);
+                        solver.addLe(lhs, rhs, name);
                         break;
                     default:
                         throw new InternalError("Type of provided constraint is not 'EQ', 'GEQ', 'LEQ' nor 'SOS', which is not supported!");
@@ -144,17 +143,17 @@ public class CplexSolver extends MILPSolver {
         checkIsDisposed();
 
         try {
-            final IloLinearNumExpr expr = this.solver.linearNumExpr();
+            final IloLinearNumExpr expr = solver.linearNumExpr();
             final double[] params = obj.getParams();
             final Var[] vars = obj.getVars();
             final double constant = obj.getConstant();
 
             for (int i = 0; i < params.length; i++) {
-                IloNumVar var = this.retrieveVar(vars[i].getName());
+                IloNumVar var = retrieveVar(vars[i].getName());
                 expr.addTerm(params[i], var);
             }
 
-            expr.add(this.solver.linearNumExpr(constant));
+            expr.add(solver.linearNumExpr(constant));
 
             // Check if another objective is already set
             if (solver.getObjective() != null) {
@@ -164,9 +163,9 @@ public class CplexSolver extends MILPSolver {
 
             // Check if objective is to maximize or to minimize
             if (obj.isMax()) {
-                this.solver.addMaximize(expr);
+                solver.addMaximize(expr);
             } else {
-                this.solver.addMinimize(expr);
+                solver.addMinimize(expr);
             }
 
         } catch (IloException ex) {
@@ -186,15 +185,15 @@ public class CplexSolver extends MILPSolver {
         checkIsDisposed();
 
         // Check if constraint with given name is contained in model
-        if (this.retrieveCstr(constraint.getName()) == null) {
+        if (retrieveCstr(constraint.getName()) == null) {
             throw new ModelException("Model does not contain constraint with name " + constraint.getName());
         }
 
         try {
-            Object ret = this.retrieveCstr(constraint.getName());
+            Object ret = retrieveCstr(constraint.getName());
 
             if (ret instanceof IloAddable) {
-                this.solver.remove((IloAddable) ret);
+                solver.remove((IloAddable) ret);
             } else {
                 throw new IloException("Constraint is not of type 'IloAddable'!");
             }
@@ -208,19 +207,19 @@ public class CplexSolver extends MILPSolver {
     public Result optimize() {
         checkIsDisposed();
 
-        try {
-            solver.exportModel("/Users/markus/Desktop/test.lp");
-        } catch (IloException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            solver.exportModel("/Users/markus/Desktop/test.lp");
+//        } catch (IloException e) {
+//            e.printStackTrace();
+//        }
 
         try {
             final long start = System.nanoTime();
-            this.solver.solve();
+            solver.solve();
             final long end = System.nanoTime();
 
             // Get status from solver
-            Status iloStat = this.solver.getStatus();
+            Status iloStat = solver.getStatus();
             SolverStatus status;
 
             if (iloStat == Status.Optimal) {
@@ -237,7 +236,7 @@ public class CplexSolver extends MILPSolver {
                 // feasible, error
                 throw new RuntimeException("Unknown internal status.");
             }
-            
+
             return new Result(status, start - end);
         } catch (IloException e) {
             e.printStackTrace();
@@ -247,22 +246,22 @@ public class CplexSolver extends MILPSolver {
 
     @Override
     public void dispose() {
-        this.solver.end();
-        this.disposed = true;
+        solver.end();
+        disposed = true;
     }
 
     @Override
     public boolean isDisposed() {
-        return this.disposed;
+        return disposed;
     }
 
     @Override
     public double getVal(Var var) {
         checkIsDisposed();
 
-        IloNumVar iloVar = this.retrieveVar(var.getName());
+        IloNumVar iloVar = retrieveVar(var.getName());
         try {
-            return this.solver.getValue(iloVar);
+            return solver.getValue(iloVar);
         } catch (IloException e) {
             e.printStackTrace();
             throw new IllegalStateException("Could not add retrieve value for variable.");
@@ -273,10 +272,10 @@ public class CplexSolver extends MILPSolver {
     public double getObjVal() {
         checkIsDisposed();
 
-        IloObjective obj = this.solver.getObjective();
+        IloObjective obj = solver.getObjective();
         try {
             IloNumExpr expr = obj.getExpr();
-            return this.solver.getValue(expr);
+            return solver.getValue(expr);
         } catch (IloException e) {
             e.printStackTrace();
             throw new IllegalStateException("Could not add retrieve value for objective.");
@@ -288,7 +287,7 @@ public class CplexSolver extends MILPSolver {
         checkIsDisposed();
 
         try {
-            return this.solver.getModel();
+            return solver.getModel();
         } catch (IloException e) {
             e.printStackTrace();
             throw new IllegalStateException("Could not add retrieve underlying model.");
@@ -305,7 +304,7 @@ public class CplexSolver extends MILPSolver {
             throw new NullPointerException("Provided parameter 'type' was invalid!");
         }
 
-        if (this.hasVar(name)) {
+        if (hasVar(name)) {
             throw new ModelException("Variable already contained in model!");
         }
 
@@ -345,7 +344,7 @@ public class CplexSolver extends MILPSolver {
         int counter = 0;
 
         // Get iterator for model (constraints)
-        Iterator<?> cplexIt = this.solver.rangeIterator();
+        Iterator<?> cplexIt = solver.rangeIterator();
 
         // Iterate over constraints
         while (cplexIt.hasNext()) {
@@ -376,7 +375,7 @@ public class CplexSolver extends MILPSolver {
         int counter = 0;
 
         // Get iterator for model (constraints)
-        Iterator<?> cplexIt = this.solver.rangeIterator();
+        Iterator<?> cplexIt = solver.rangeIterator();
 
         // Iterate over constraints
         while (cplexIt.hasNext()) {
@@ -398,7 +397,7 @@ public class CplexSolver extends MILPSolver {
 
         checkIsDisposed();
 
-        return !(null == this.retrieveVar(varName));
+        return !(null == retrieveVar(varName));
     }
 
     @Override
@@ -409,7 +408,7 @@ public class CplexSolver extends MILPSolver {
 
         checkIsDisposed();
 
-        return !(null == this.retrieveCstr(cstrName));
+        return !(null == retrieveCstr(cstrName));
     }
 
     /*
@@ -422,7 +421,7 @@ public class CplexSolver extends MILPSolver {
      * @throws IloException If something goes wrong.
      */
     private void init() throws IloException {
-        this.solver = new IloCplex();
+        solver = new IloCplex();
     }
 
     /**
@@ -447,7 +446,7 @@ public class CplexSolver extends MILPSolver {
          * Normal constraints:
          */
         // Get iterator for model (constraints)
-        Iterator<?> cplexIt = this.solver.rangeIterator();
+        Iterator<?> cplexIt = solver.rangeIterator();
 
         // Iterate over constraints
         while (cplexIt.hasNext()) {
@@ -463,7 +462,7 @@ public class CplexSolver extends MILPSolver {
          * SOS1 constraints:
          */
         // Get iterator for model (sos1 constraints)
-        Iterator<?> cplexItSos1 = this.solver.SOS1iterator();
+        Iterator<?> cplexItSos1 = solver.SOS1iterator();
 
         // Iterate over constraints
         while (cplexItSos1.hasNext()) {
@@ -482,7 +481,7 @@ public class CplexSolver extends MILPSolver {
          * SOS2 constraints:
          */
         // Get iterator for model (sos2 constraints)
-        Iterator<?> cplexItSos2 = this.solver.SOS2iterator();
+        Iterator<?> cplexItSos2 = solver.SOS2iterator();
 
         // Iterate over constraints
         while (cplexItSos2.hasNext()) {
@@ -511,7 +510,7 @@ public class CplexSolver extends MILPSolver {
         checkIsDisposed();
 
         // Get iterator for model (constraints)
-        Iterator<?> cplexIt = this.solver.iterator();
+        Iterator<?> cplexIt = solver.iterator();
 
         // Iterate over constraints
         while (cplexIt.hasNext()) {
@@ -545,23 +544,23 @@ public class CplexSolver extends MILPSolver {
         }
 
         try {
-            this.solver = new IloCplex();
+            solver = new IloCplex();
 
             // Setup logging
-            this.setLogging(logging);
+            setLogging(logging);
 
             // Timeout
             if (timeout != 0)
                 // Set parameter for timeout in seconds
-                this.solver.setParam(IloCplex.DoubleParam.TiLim, timeoutUnit.toSeconds(timeout));
+                solver.setParam(IloCplex.DoubleParam.TiLim, timeoutUnit.toSeconds(timeout));
 
 
             // Random Seed
             if (seed != -1)
-                this.solver.setParam(IloCplex.IntParam.RandomSeed, seed);
+                solver.setParam(IloCplex.IntParam.RandomSeed, seed);
 
 
-            this.solver.setParam(IloCplex.BooleanParam.PreInd, presolve);
+            solver.setParam(IloCplex.BooleanParam.PreInd, presolve);
 
         } catch (IloException ex) {
             ex.printStackTrace();
@@ -578,10 +577,10 @@ public class CplexSolver extends MILPSolver {
     private void setLogging(boolean isLogging) throws IloException {
         if (!isLogging) {
             // Disable logging
-            this.solver.setOut(null);
+            solver.setOut(null);
         } else {
             // Activate logging to console
-            this.solver.setOut(System.out);
+            solver.setOut(System.out);
         }
     }
 
