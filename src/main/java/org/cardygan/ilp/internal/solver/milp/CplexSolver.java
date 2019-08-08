@@ -308,33 +308,27 @@ public class CplexSolver extends MILPSolver {
             throw new ModelException("Variable already contained in model!");
         }
 
+        if (lb > ub) {
+            throw new ModelException("Specified lower bound needs to be larger than upper bound.");
+        }
+
         try {
             if (type == VarType.BIN) {
                 solver.add(solver.boolVar(name));
             } else if (type == VarType.INT) {
-                if (lb > ub) {
-                    // TODO
-                    throw new ModelException("");
-                }
-
                 final double lbNew = (lb < 0) ? Integer.MIN_VALUE : lb;
                 final double ubNew = (ub < 0) ? Integer.MAX_VALUE : ub;
 
                 solver.add(solver.intVar((int) lbNew, (int) ubNew, name));
             } else if (type == VarType.DBL) {
-                if (lb > ub) {
-                    // TODO
-                    throw new ModelException("");
-                }
-
                 final double lbNew = (lb < 0) ? Double.MIN_VALUE : lb;
                 final double ubNew = (ub < 0) ? Double.MAX_VALUE : ub;
 
                 solver.add(solver.numVar(lbNew, ubNew, name));
             }
         } catch (IloException ex) {
-            // TODO
             ex.printStackTrace();
+            throw new IllegalStateException("Could not add variable name to CPLEX model.");
         }
     }
 
