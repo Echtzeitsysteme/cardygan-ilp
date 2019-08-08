@@ -21,22 +21,28 @@ import java.util.concurrent.TimeUnit;
  * @author Maximilian Kratz <maximilian.kratz@stud.tu-darmstadt.de>
  */
 public class CplexSolver extends MILPSolver {
-    /*
-     * Variables
-     */
+
     private IloCplex solver;
     private boolean disposed;
 
+
+    public CplexSolver() {
+        this(false, true, -1, null, -1, null);
+    }
+
     /**
      * Constructor for initializing an object.
+     *
+     * @param logging     True if logging to console should be enabled.
+     * @param presolve    True if presolving should be enabled.
+     * @param timeout     Time limit in timeoutUnit.
+     * @param timeoutUnit Time unit for time out.
+     * @param seed        Random seed for solver.
+     * @param libPath     Path to CPLEX library (as String).
      */
-    public CplexSolver() {
-        try {
-            init();
-        } catch (IloException e) {
-            e.printStackTrace();
-            throw new IllegalStateException("Could not initialize CPLEX backend.");
-        }
+    private CplexSolver(boolean logging, boolean presolve, long timeout, TimeUnit timeoutUnit,
+                        int seed, String libPath) {
+        init(presolve, logging, timeout, timeoutUnit, seed, libPath);
     }
 
     /**
@@ -50,10 +56,50 @@ public class CplexSolver extends MILPSolver {
      * @param seed        Random seed for solver.
      * @param libPath     Path to CPLEX library (as String).
      */
-    public CplexSolver(MILPConstrGenerator gen, boolean logging, boolean presolve, long timeout, TimeUnit timeoutUnit,
-                       int seed, String libPath) {
+    private CplexSolver(MILPConstrGenerator gen, boolean logging, boolean presolve, long timeout, TimeUnit timeoutUnit,
+                        int seed, String libPath) {
         super(gen);
         init(presolve, logging, timeout, timeoutUnit, seed, libPath);
+    }
+
+    /**
+     * Initializes the CPLEX solver backend.
+     *
+     * @param presolve    True if CPLEX should use presolving.
+     * @param logging     True if CPLEX should log to console.
+     * @param timeout     Time limit in timeoutUnit.
+     * @param timeoutUnit Time out unit.
+     * @param seed        Random seed value.
+     * @param libPath     Library path for CPLEX (as String).
+     */
+    private void init(boolean presolve, boolean logging, long timeout, TimeUnit timeoutUnit, int seed, String libPath) {
+        if (libPath != null && libPath.length() != 0) {
+            LibraryUtil.loadLibraryFromPath(libPath);
+        }
+
+        try {
+            solver = new IloCplex();
+
+            // Setup logging
+            setLogging(logging);
+
+            // Timeout
+            if (timeout >= 0)
+                // Set parameter for timeout in seconds
+                solver.setParam(IloCplex.DoubleParam.TiLim, timeoutUnit.toSeconds(timeout));
+
+
+            // Random Seed
+            if (seed != -1)
+                solver.setParam(IloCplex.IntParam.RandomSeed, seed);
+
+
+            solver.setParam(IloCplex.BooleanParam.PreInd, presolve);
+
+        } catch (IloException ex) {
+            ex.printStackTrace();
+            throw new IllegalStateException("Could not initialize CPLEX backend.");
+        }
     }
 
     @Override
@@ -70,15 +116,14 @@ public class CplexSolver extends MILPSolver {
             throw new ModelException("Constraint with given name already exists in model!");
         }
 
-        /*
-         * Get parameters from constraint
-         */
+
+        //Get parameters from constraint
         final LinearConstr.Type type = cstr.getType();
         final double[] params = cstr.getParams();
         final Var[] vars = cstr.getVars();
 
         try {
-            // If type is SOS (special one!)
+            // If type is SOS (special ordered set)
             if (type == Type.SOS) {
                 final IloNumVar[] numVars = new IloNumVar[vars.length];
 
@@ -197,12 +242,6 @@ public class CplexSolver extends MILPSolver {
     public Result optimize() {
         checkIsDisposed();
 
-//        try {
-//            solver.exportModel("/Users/markus/Desktop/test.lp");
-//        } catch (IloException e) {
-//            e.printStackTrace();
-//        }
-
         try {
             final long start = System.nanoTime();
             solver.solve();
@@ -215,7 +254,10 @@ public class CplexSolver extends MILPSolver {
             if (iloStat == Status.Optimal) {
                 status = SolverStatus.OPTIMAL;
             } else if (iloStat == Status.Unbounded) {
-                status = SolverStatus.UNBOUNDED;
+                if (solver.isPrimalFeasible())
+                    status = SolverStatus.UNBOUNDED;
+                else
+                    status = SolverStatus.INF_OR_UNBD;
             } else if (iloStat == Status.Infeasible) {
                 status = SolverStatus.INFEASIBLE;
             } else if (iloStat == Status.InfeasibleOrUnbounded) {
@@ -298,7 +340,7 @@ public class CplexSolver extends MILPSolver {
             throw new ModelException("Variable already contained in model!");
         }
 
-        if (lb > ub) {
+        if (lb >= 0 && ub >= 0 && lb > ub) {
             throw new ModelException("Specified lower bound needs to be larger than upper bound.");
         }
 
@@ -395,18 +437,6 @@ public class CplexSolver extends MILPSolver {
         return !(null == retrieveCstr(cstrName));
     }
 
-    /*
-     * Utility methods
-     */
-
-    /**
-     * Initializes all variables.
-     *
-     * @throws IloException If something goes wrong.
-     */
-    private void init() throws IloException {
-        solver = new IloCplex();
-    }
 
     /**
      * Checks if the state is disposed. Throws a model exception if state is disposed.
@@ -512,45 +542,6 @@ public class CplexSolver extends MILPSolver {
         return null;
     }
 
-    /**
-     * Initializes the CPLEX solver backend.
-     *
-     * @param presolve    True if CPLEX should use presolving.
-     * @param logging     True if CPLEX should log to console.
-     * @param timeout     Time limit in timeoutUnit.
-     * @param timeoutUnit Time out unit.
-     * @param seed        Random seed value.
-     * @param libPath     Library path for CPLEX (as String).
-     */
-    private void init(boolean presolve, boolean logging, long timeout, TimeUnit timeoutUnit, int seed, String libPath) {
-        if (libPath != null && libPath.length() != 0) {
-            LibraryUtil.loadLibraryFromPath(libPath);
-        }
-
-        try {
-            solver = new IloCplex();
-
-            // Setup logging
-            setLogging(logging);
-
-            // Timeout
-            if (timeout != 0)
-                // Set parameter for timeout in seconds
-                solver.setParam(IloCplex.DoubleParam.TiLim, timeoutUnit.toSeconds(timeout));
-
-
-            // Random Seed
-            if (seed != -1)
-                solver.setParam(IloCplex.IntParam.RandomSeed, seed);
-
-
-            solver.setParam(IloCplex.BooleanParam.PreInd, presolve);
-
-        } catch (IloException ex) {
-            ex.printStackTrace();
-            throw new IllegalStateException("Could not initialize CPLEX backend.");
-        }
-    }
 
     /**
      * Sets logging up.
@@ -582,7 +573,7 @@ public class CplexSolver extends MILPSolver {
         private boolean logging;
         private boolean presolve;
         private MILPConstrGenerator gen;
-        private long timeout = 0;
+        private long timeout = -1;
         private TimeUnit timeoutUnit = TimeUnit.SECONDS;
         private String libPath = null;
         private int seed = -1;

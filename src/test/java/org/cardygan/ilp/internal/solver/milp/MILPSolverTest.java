@@ -3,10 +3,7 @@ package org.cardygan.ilp.internal.solver.milp;
 import gurobi.GRBModel;
 import ilog.concert.IloModel;
 import org.cardygan.ilp.api.Result;
-import org.cardygan.ilp.api.model.Constraint;
-import org.cardygan.ilp.api.model.IntVar;
-import org.cardygan.ilp.api.model.Model;
-import org.cardygan.ilp.api.model.Var;
+import org.cardygan.ilp.api.model.*;
 import org.cardygan.ilp.internal.solver.Solver;
 import org.cardygan.ilp.internal.util.ModelException;
 import org.junit.Test;
@@ -66,8 +63,6 @@ public class MILPSolverTest {
         // check infeasible or unbounded
         sut.addCstr("test2", new LinearConstr(new Var[]{v1}, new double[]{1d}, 0, LinearConstr.Type.EQ));
         sut.addCstr("test3", new LinearConstr(new Var[]{v1}, new double[]{1d}, 1, LinearConstr.Type.EQ));
-        Result res2 = sut.optimize();
-        assertSame(Result.SolverStatus.INF_OR_UNBD, res2.getStatus());
 
         // check infeasible
         sut.setObj(new LinearObj(true, new Var[]{}, new double[]{}, 0));
@@ -86,11 +81,18 @@ public class MILPSolverTest {
     }
 
     @Test
-    public void optimize2() {
+    public void optimizeInfeasibleOrUnbounded() {
+
+//        Min -x1 - x2
+//        s.t.
+//                x1 - x2 = 5
+//        x1 - x2 - x3= -5
+//        x3 = 0
+//        x1, x2, x3 >= 0
         Model model = mock(Model.class);
-        Var x1 = mock(IntVar.class);
-        Var x2 = mock(IntVar.class);
-        Var x3 = mock(IntVar.class);
+        Var x1 = mock(DoubleVar.class);
+        Var x2 = mock(DoubleVar.class);
+        Var x3 = mock(DoubleVar.class);
 
         // add and remove valid constraint
         given(model.hasVar("x1")).willReturn(true);
@@ -100,38 +102,23 @@ public class MILPSolverTest {
         given(x2.getName()).willReturn("x2");
         given(x3.getName()).willReturn("x3");
 
-        sut.addVar("x1", -1, -1, Solver.VarType.INT);
-        sut.addVar("x2", -1, -1, Solver.VarType.INT);
-        sut.addVar("x3", -1, -1, Solver.VarType.INT);
+        sut.addVar("x1", 0, -1, Solver.VarType.DBL);
+        sut.addVar("x2", 0, -1, Solver.VarType.DBL);
+        sut.addVar("x3", 0, -1, Solver.VarType.DBL);
 
-        // check infeasible or unbound
+        // check infeasible or unbounded
         sut.addCstr("test1", new LinearConstr(new Var[]{x1, x2}, new double[]{1d, -1d}, 5, LinearConstr.Type.EQ));
         sut.addCstr("test2", new LinearConstr(new Var[]{x1, x2, x3}, new double[]{1d, -1d, -1d}, -5, LinearConstr.Type.EQ));
-        sut.addCstr("test3", new LinearConstr(new Var[]{x1}, new double[]{1d}, 0, LinearConstr.Type.GEQ));
-        sut.addCstr("test4", new LinearConstr(new Var[]{x2}, new double[]{1d}, 0, LinearConstr.Type.GEQ));
-        sut.addCstr("test5", new LinearConstr(new Var[]{x3}, new double[]{1d}, 0, LinearConstr.Type.GEQ));
-        //sut.addCstr("test6", new LinearConstr(new Var[]{x3}, new double[]{1d}, 0, LinearConstr.Type.EQ));
+        sut.addCstr("test3", new LinearConstr(new Var[]{x3}, new double[]{1d}, 0, LinearConstr.Type.EQ));
+
         sut.setObj(new LinearObj(false, new Var[]{x1, x2}, new double[]{-1d, -1d}, 0));
-
-//        sut.addCstr("test1", new LinearConstr(new Var[]{x1, x2, x3}, new double[]{1d, 1d, -2d}, 1, LinearConstr.Type.GEQ));
-//        sut.addCstr("test2", new LinearConstr(new Var[]{x1, x2, x3}, new double[]{1d, -2d, 1d}, 0, LinearConstr.Type.GEQ));
-//        sut.addCstr("test3", new LinearConstr(new Var[]{x1}, new double[]{1d}, 0, LinearConstr.Type.GEQ));
-//        sut.addCstr("test4", new LinearConstr(new Var[]{x2}, new double[]{1d}, 0, LinearConstr.Type.GEQ));
-//        sut.addCstr("test5", new LinearConstr(new Var[]{x3}, new double[]{1d}, 0, LinearConstr.Type.GEQ));
-//        sut.setObj(new LinearObj(false, new Var[]{x1, x2, x3}, new double[]{2d, -2d, -2d}, 0));
-
-//        sut.addCstr("test1", new LinearConstr(new Var[]{x1, x2}, new double[]{1d, 1d}, 2, LinearConstr.Type.LEQ));
-//        sut.addCstr("test2", new LinearConstr(new Var[]{x1, x2}, new double[]{1d, -2d}, -2, LinearConstr.Type.LEQ));
-//        sut.addCstr("test3", new LinearConstr(new Var[]{x1, x2}, new double[]{-2d, 1d}, -2, LinearConstr.Type.LEQ));
-//        sut.addCstr("test4", new LinearConstr(new Var[]{x1}, new double[]{1d}, 0, LinearConstr.Type.GEQ));
-//        sut.addCstr("test5", new LinearConstr(new Var[]{x2}, new double[]{1d}, 0, LinearConstr.Type.GEQ));
-//        sut.setObj(new LinearObj(true, new Var[]{x1}, new double[]{1d}, 0));
 
         Result res = sut.optimize();
         assertSame(Result.SolverStatus.INF_OR_UNBD, res.getStatus());
 
         sut.dispose();
     }
+
 
     @Test
     public void dispose() {

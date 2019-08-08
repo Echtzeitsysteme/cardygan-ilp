@@ -26,7 +26,7 @@ public class GurobiSolver extends MILPSolver {
     private Map<String, GRBSOS> addedSos = new HashMap<>();
 
     public GurobiSolver() {
-        init(true, false, 0, TimeUnit.SECONDS, -1, null);
+        init(true, false, -1, TimeUnit.SECONDS, -1, null);
     }
 
     private GurobiSolver(MILPConstrGenerator gen, boolean logging, boolean presolve,
@@ -44,7 +44,7 @@ public class GurobiSolver extends MILPSolver {
             model = new GRBModel(env);
             setLogging(logging, env);
 
-            if (timeout != 0)
+            if (timeout >= 0)
                 env.set(GRB.DoubleParam.TimeLimit, timeoutUnit.toSeconds(timeout));
 
             if (seed != -1)
@@ -400,7 +400,7 @@ public class GurobiSolver extends MILPSolver {
         private boolean logging;
         private boolean presolve = true;
         private MILPConstrGenerator gen;
-        private long timeout = 0;
+        private long timeout = -1;
         private TimeUnit timeoutUnit = TimeUnit.SECONDS;
         private String libPath = null;
         private int seed = -1;
