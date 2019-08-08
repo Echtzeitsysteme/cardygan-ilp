@@ -1,8 +1,9 @@
 package org.cardygan.ilp.internal.solver.milp;
 
-import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
-
+import ilog.concert.*;
+import ilog.cplex.CpxNumVar;
+import ilog.cplex.IloCplex;
+import ilog.cplex.IloCplex.Status;
 import org.cardygan.ilp.api.Result;
 import org.cardygan.ilp.api.Result.SolverStatus;
 import org.cardygan.ilp.api.model.Constraint;
@@ -11,19 +12,8 @@ import org.cardygan.ilp.internal.solver.milp.LinearConstr.Type;
 import org.cardygan.ilp.internal.util.LibraryUtil;
 import org.cardygan.ilp.internal.util.ModelException;
 
-import ilog.concert.IloAddable;
-import ilog.concert.IloException;
-import ilog.concert.IloLinearNumExpr;
-import ilog.concert.IloLinearNumExprIterator;
-import ilog.concert.IloNumExpr;
-import ilog.concert.IloNumVar;
-import ilog.concert.IloObjective;
-import ilog.concert.IloRange;
-import ilog.concert.IloSOS1;
-import ilog.concert.IloSOS2;
-import ilog.cplex.CpxNumVar;
-import ilog.cplex.IloCplex;
-import ilog.cplex.IloCplex.Status;
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class represents the implementation of the interface MILPSolver for IBMs CPLEX solver.
