@@ -223,14 +223,6 @@ public class CplexSolver extends MILPSolver {
             Status iloStat = this.solver.getStatus();
             SolverStatus status;
 
-            /*
-             * UNBOUNDED
-             * INF_OR_UNBD
-             * INFEASIBLE
-             * OPTIMAL
-             * TIME_OUT
-             */
-
             if (iloStat == Status.Optimal) {
                 status = SolverStatus.OPTIMAL;
             } else if (iloStat == Status.Unbounded) {
@@ -239,15 +231,13 @@ public class CplexSolver extends MILPSolver {
                 status = SolverStatus.INFEASIBLE;
             } else if (iloStat == Status.InfeasibleOrUnbounded) {
                 status = SolverStatus.INF_OR_UNBD;
+            } else if (iloStat == Status.Unknown) {
+                status = SolverStatus.TIME_OUT;
             } else {
+                // feasible, error
                 throw new RuntimeException("Unknown internal status.");
             }
-
-            /*
-             * TODO:
-             * There are more than these four states possible!
-             */
-
+            
             return new Result(status, start - end);
         } catch (IloException e) {
             e.printStackTrace();
