@@ -30,14 +30,13 @@ public class DoubleCstrLangTest {
     public static Collection<Object[]> data() {
         return Arrays.asList(
                 new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new SosBasedCstrGenerator())},
-                new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new BigMBasedCstrGenerator(1000))}
-//                ,
-//                new Solver.SolverBuilder[]{new CplexSolver.CplexSolverBuilder().withMILPConstrGenerator(new SosBasedCstrGenerator())},
-//                new Solver.SolverBuilder[]{new CplexSolver.CplexSolverBuilder().withMILPConstrGenerator(new BigMBasedCstrGenerator(1000))}
+                new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new BigMBasedCstrGenerator(1000))},
+                new Solver.SolverBuilder[]{new CplexSolver.CplexSolverBuilder().withMILPConstrGenerator(new SosBasedCstrGenerator())},
+                new Solver.SolverBuilder[]{new CplexSolver.CplexSolverBuilder().withMILPConstrGenerator(new BigMBasedCstrGenerator(1000))}
         );
     }
 
-
+    
     private Solver.SolverBuilder data;
 
     public DoubleCstrLangTest(Solver.SolverBuilder data) {

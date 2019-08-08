@@ -10,7 +10,6 @@ import org.cardygan.ilp.api.model.Model;
 import org.cardygan.ilp.api.model.Var;
 import org.cardygan.ilp.internal.solver.Solver;
 import org.cardygan.ilp.internal.util.ModelException;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -32,25 +31,18 @@ public class MILPSolverTest {
         return Arrays.asList(
         		new GurobiSolver(),
         		new CplexSolver()
-
         );
+//    	List<Class<MILPSolver>> list = new ArrayList<Class<MILPSolver>>();
     }
     
     public MILPSolverTest(MILPSolver solver) {
-		this.sut = solver;
-	}
-    
-    // TODO: This is not an elegant coding style ...
-    @Before
-    public void setup() {
-    	// Find type of solver implementation and create new object
     	try {
-			sut = sut.getClass().newInstance();
+			this.sut = solver.getClass().newInstance();
 		} catch (InstantiationException | IllegalAccessException e) {
 			e.printStackTrace();
 			throw new InternalError("Instantiation of sut object failed!");
 		}
-    }
+	}
 
     @Test
     public void optimize() {

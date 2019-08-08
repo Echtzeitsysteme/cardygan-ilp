@@ -11,6 +11,7 @@ import org.cardygan.ilp.internal.solver.milp.LinearConstr.Type;
 import org.cardygan.ilp.internal.util.LibraryUtil;
 import org.cardygan.ilp.internal.util.ModelException;
 
+import gurobi.GRB;
 import ilog.concert.IloAddable;
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
@@ -31,7 +32,6 @@ import ilog.cplex.IloCplex.Status;
  * @author Maximilian Kratz <maximilian.kratz@stud.tu-darmstadt.de>
  */
 public class CplexSolver extends MILPSolver {
-
     /*
      * Variables
      */
@@ -50,17 +50,17 @@ public class CplexSolver extends MILPSolver {
         }
     }
 
-    /**
-     * Constructor for initializing an object.
-     *
-     * @param gen         A MILPConstrGenerator that gets set up in super constructor.
-     * @param logging     True if logging to console should be enabled.
-     * @param presolve    True if presolving should be enabled.
-     * @param timeout     Time limit in timeoutUnit.
-     * @param timeoutUnit Time unit for time out.
-     * @param seed        Random seed for solver.
-     * @param libPath     Path to cplex library (as String).
-     */
+	/**
+	 * Constructor for initializing an object.
+	 *
+	 * @param gen A MILPConstrGenerator that gets set up in super constructor.
+	 * @param logging True if logging to console should be enabled.
+	 * @param presolve True if presolving should be enabled.
+	 * @param timeout Time limit in timeoutUnit.
+	 * @param timeoutUnit Time unit for time out.
+	 * @param seed Random seed for solver.
+	 * @param libPath Path to CPLEX library (as String).
+	 */
     public CplexSolver(MILPConstrGenerator gen, boolean logging, boolean presolve, long timeout, TimeUnit timeoutUnit,
                        int seed, String libPath) {
         super(gen);
@@ -137,43 +137,44 @@ public class CplexSolver extends MILPSolver {
 
     @Override
     public void setObj(LinearObj obj) {
-        if (obj == null) {
-            throw new IllegalArgumentException("Provided parameter 'obj' was invalid!");
-        }
-
-        checkIsDisposed();
-
-        try {
-            final IloLinearNumExpr expr = this.solver.linearNumExpr();
-            final double[] params = obj.getParams();
-            final Var[] vars = obj.getVars();
-            final double constant = obj.getConstant();
-
-            for (int i = 0; i < params.length; i++) {
-                IloNumVar var = this.retrieveVar(vars[i].getName());
-                expr.addTerm(params[i], var);
-            }
-
-            // Add constant to expression
-            expr.setConstant(constant);
-
-            IloObjective iloObj;
-
-            // Check if objective is to maximize or to minimize
-            if (obj.isMax())
-                this.solver.addMaximize(expr);
-            else
-                this.solver.addMinimize(expr);
-
-
-            // Add final objective to solver
-//            this.solver.add(iloObj);
-        } catch (IloException ex) {
-            ex.printStackTrace();
+    	if(obj == null) {
+    		throw new IllegalArgumentException("Provided parameter 'obj' was invalid!");
+    	}
+    	
+    	checkIsDisposed();
+    	
+    	try {
+	    	final IloLinearNumExpr expr = this.solver.linearNumExpr();
+	    	final double[] params = obj.getParams();
+	    	final Var[] vars = obj.getVars();
+	    	final double constant = obj.getConstant();
+	    	
+	    	for(int i = 0; i < params.length; i++) {
+	    		IloNumVar var = this.retrieveVar(vars[i].getName());
+	    		expr.addTerm(params[i], var);
+	    	}
+	    	
+	    	expr.add(this.solver.linearNumExpr(constant));
+	    	
+	    	// Check if another objective is already set
+	    	if(solver.getObjective() != null) {
+	    		// Remove it before setting new one
+	    		solver.remove(solver.getObjective());
+	    	}
+	    	
+	    	// Check if objective is to maximize or to minimize
+	    	if(obj.isMax()) {
+	    		this.solver.addMaximize(expr);
+	    	} else {
+	    		this.solver.addMinimize(expr);
+	    	}
+	    	
+    	} catch (IloException ex) {
+    		ex.printStackTrace();
             throw new IllegalStateException("Could not add objective to CPLEX model.");
-        } catch (NullPointerException ex) {
-            throw new ModelException("There was a NullPointerException thrown in the cplex backend!");
-        }
+    	} catch (NullPointerException ex) {
+    		throw new ModelException("There was a NullPointerException thrown in the CPLEX backend!");
+    	}
     }
 
     @Override
@@ -208,7 +209,7 @@ public class CplexSolver extends MILPSolver {
         checkIsDisposed();
 
         try {
-            solver.exportModel("/Users/markus/Desktop/test.lp");
+            solver.exportModel("/home/maxkratz/Schreibtisch/test_cplex.lp");
         } catch (IloException e) {
             e.printStackTrace();
         }
@@ -313,41 +314,38 @@ public class CplexSolver extends MILPSolver {
         if (type == null) {
             throw new NullPointerException("Provided parameter 'type' was invalid!");
         }
-
-        // CPLEX does not need to know of which type the new variable is ...
-        this.addVar(name, lb, ub);
-    }
-
-    /**
-     * Same as addVar() but without type.
-     *
-     * @param name String as name.
-     * @param lb   Lower bound.
-     * @param ub   Upper bound.
-     */
-    private void addVar(String name, double lb, double ub) {
-        if (name == null || name.length() == 0) {
-            throw new IllegalArgumentException("Provided parameter 'name' was invalid!");
-        }
-
+        
         if (this.hasVar(name)) {
-            throw new ModelException("Variable already contained in model!");
+        	throw new ModelException("Variable already contained in model!");
         }
-
-        if (lb > ub) {
-            throw new ModelException("Invalid lower and upper bounds!");
-        }
-
+        
         try {
-            IloNumVar newVar = this.solver.numVar(lb, ub, name);
-            IloAddable ret = this.solver.add(newVar);
-
-            if (ret == null) {
-                throw new IloException();
-            }
-        } catch (IloException e) {
-            e.printStackTrace();
-            throw new IllegalStateException("Could not add variable name to CPLEX model.");
+	        if(type == VarType.BIN) {
+	        	solver.add(solver.boolVar(name));
+	        } else if(type == VarType.INT) {
+	        	if(lb > ub) {
+	        		// TODO
+	        		throw new ModelException("");
+	        	}
+	        	
+	            final double lbNew = (lb < 0) ? Integer.MIN_VALUE : lb;
+	            final double ubNew = (ub < 0) ? Integer.MAX_VALUE : ub;
+	        	
+	        	solver.add(solver.intVar((int) lbNew, (int) ubNew, name));
+	        } else if(type == VarType.DBL) {
+	        	if(lb > ub) {
+	        		// TODO
+	        		throw new ModelException("");
+	        	}
+	        	
+	            final double lbNew = (lb < 0) ? Double.MIN_VALUE : lb;
+	            final double ubNew = (ub < 0) ? Double.MAX_VALUE : ub;
+	            
+	        	solver.add(solver.numVar(lbNew, ubNew, name));
+	        }
+        } catch (IloException ex) {
+        	// TODO
+        	ex.printStackTrace();
         }
     }
 

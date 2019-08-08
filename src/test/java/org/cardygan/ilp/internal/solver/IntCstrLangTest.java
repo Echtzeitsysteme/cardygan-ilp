@@ -30,10 +30,9 @@ public class IntCstrLangTest {
                 new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new SosBasedCstrGenerator())},
                 new Solver.SolverBuilder[]{new GurobiSolver.GurobiSolverBuilder().withMILPConstrGenerator(new BigMBasedCstrGenerator(1000))},
                 // TODO: Which bounds to choose?
-                new Solver.SolverBuilder[]{new ChocoSolver.ChocoSolverBuilder(-100, 100)}
-//                ,
-//                new Solver.SolverBuilder[]{new CplexSolver.CplexSolverBuilder().withMILPConstrGenerator(new SosBasedCstrGenerator())},
-//                new Solver.SolverBuilder[]{new CplexSolver.CplexSolverBuilder().withMILPConstrGenerator(new BigMBasedCstrGenerator(1000))}
+//                new Solver.SolverBuilder[]{new ChocoSolver.ChocoSolverBuilder(-100, 100)},
+                new Solver.SolverBuilder[]{new CplexSolver.CplexSolverBuilder().withMILPConstrGenerator(new SosBasedCstrGenerator())},
+                new Solver.SolverBuilder[]{new CplexSolver.CplexSolverBuilder().withMILPConstrGenerator(new BigMBasedCstrGenerator(1000))}
         );
     }
 
