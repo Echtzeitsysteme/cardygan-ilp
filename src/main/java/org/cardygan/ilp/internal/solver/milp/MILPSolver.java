@@ -136,4 +136,9 @@ public abstract class MILPSolver implements Solver {
      */
     public abstract void setObj(LinearObj obj);
 
+
+    interface MILPSolverBuilder extends SolverBuilder {
+        MILPSolver build();
+    }
+
 }

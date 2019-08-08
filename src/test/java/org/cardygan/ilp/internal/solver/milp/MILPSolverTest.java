@@ -2,7 +2,6 @@ package org.cardygan.ilp.internal.solver.milp;
 
 import gurobi.GRBModel;
 import ilog.concert.IloModel;
-
 import org.cardygan.ilp.api.Result;
 import org.cardygan.ilp.api.model.Constraint;
 import org.cardygan.ilp.api.model.IntVar;
@@ -14,35 +13,32 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static org.junit.Assert.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-
-import java.util.Arrays;
-import java.util.List;
 
 @RunWith(Parameterized.class)
 public class MILPSolverTest {
 
     private MILPSolver sut;
-    
+
     @Parameterized.Parameters
-    public static List<MILPSolver> data() {
+    public static List<MILPSolver.MILPSolverBuilder> data() {
         return Arrays.asList(
-        		new GurobiSolver(),
-        		new CplexSolver()
+                new GurobiSolver.GurobiSolverBuilder(),
+                new CplexSolver.CplexSolverBuilder()
         );
-//    	List<Class<MILPSolver>> list = new ArrayList<Class<MILPSolver>>();
     }
-    
-    public MILPSolverTest(MILPSolver solver) {
-    	try {
-			this.sut = solver.getClass().newInstance();
-		} catch (InstantiationException | IllegalAccessException e) {
-			e.printStackTrace();
-			throw new InternalError("Instantiation of sut object failed!");
-		}
-	}
+
+
+    public MILPSolverTest(MILPSolver.MILPSolverBuilder builder) {
+        this.sut = builder.build();
+
+    }
+
 
     @Test
     public void optimize() {
@@ -101,9 +97,9 @@ public class MILPSolverTest {
     public void getUnderlyingModel() {
         if (sut instanceof GurobiSolver)
             assertTrue(sut.getUnderlyingModel() instanceof GRBModel);
-        
+
         if (sut instanceof CplexSolver)
-        	assertTrue(sut.getUnderlyingModel() instanceof IloModel);
+            assertTrue(sut.getUnderlyingModel() instanceof IloModel);
     }
 
     @Test

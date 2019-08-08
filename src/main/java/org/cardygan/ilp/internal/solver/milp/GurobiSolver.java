@@ -395,10 +395,10 @@ public class GurobiSolver extends MILPSolver {
         });
     }
 
-    public static class GurobiSolverBuilder implements SolverBuilder {
+    public static class GurobiSolverBuilder implements MILPSolverBuilder {
 
         private boolean logging;
-        private boolean presolve;
+        private boolean presolve = true;
         private MILPConstrGenerator gen;
         private long timeout = 0;
         private TimeUnit timeoutUnit = TimeUnit.SECONDS;
