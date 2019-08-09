@@ -1,7 +1,7 @@
 language: java
 
 jdk:
-  - openjdk9
+  - oraclejdk8
 
 env:
   - secure: vMdjKYiRPWxKd8hc36fJJy/+jRNeE1uSlBQGY8e8OKF7aOlBT9HhlC15pWeZb2kvQIJ9r/b8UlY9uAyno0tmKNfPwdqj0bSg0or2OKo4//0uUWuz1y/03bBbCNlXPMa7z5yPImBAKQTZd1xyMRaZeQcJzI86iQQyPGMM9UbL0GuXlACo7RSIRvCmu1ka2bXj1h5174ybLK4GqHU9IW76lITjUw0JCOLy8eUge7bc59gR4qObNHNhaxgojEq0QwogqicH6wC1m6cRctZZoEwO9VxLGEMFe7masI1sJCsNJHH1++oNt1KcSz+4qs6LOQWCTdKgdY16xFhSlwv90Rvsew==
@@ -9,6 +9,7 @@ env:
 build:
   ci:
   - mkdir tmp
+  - pwd
   - cp ext_lib/internal.tar.gpg tmp
   - cd tmp
   - gpg --output internal.tar --yes --batch --decrypt --passphrase $UNZIP internal.tar.gpg
