@@ -88,7 +88,13 @@ public abstract class MILPSolver implements Solver {
         return ret;
     }
 
+    public abstract void setPresolve(boolean presolve);
+
     public void newObjective(boolean maximize, ArithExpr expr) {
+        if (expr == null) {
+            removeObj();
+            return;
+        }
         ExprSimplifier.SimplifiedArithExpr simplExpr = ExprSimplifier.simplify(expr);
 
         // one additional entry for constant
@@ -112,6 +118,11 @@ public abstract class MILPSolver implements Solver {
         LinearObj obj = new LinearObj(maximize, vars, params, constant);
         setObj(obj);
     }
+
+    /**
+     * Removes the currently set objective from the model.
+     */
+    protected abstract void removeObj();
 
     /**
      * Adds a constraint to the backend.

@@ -7,9 +7,7 @@ import org.cardygan.ilp.api.model.Var;
 import org.cardygan.ilp.internal.util.LibraryUtil;
 import org.cardygan.ilp.internal.util.ModelException;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.cardygan.ilp.internal.util.Util.assertNotNull;
@@ -19,6 +17,10 @@ public class GurobiSolver extends MILPSolver {
     private GRBModel model;
     private GRBEnv env;
     private boolean disposed = false;
+    private Map<String, GRBVar> vars = new HashMap<>();
+    private boolean with_cache = true;
+
+    private Set<String> cstrs = new HashSet<>();
 
     /**
      * Set for tracking added SOS constraints.
@@ -29,20 +31,26 @@ public class GurobiSolver extends MILPSolver {
         init(true, false, -1, TimeUnit.SECONDS, -1, null);
     }
 
-    private GurobiSolver(MILPConstrGenerator gen, boolean logging, boolean presolve,
+    private GurobiSolver(MILPConstrGenerator gen, boolean with_cache, boolean logging, boolean presolve,
                          long timeout, TimeUnit timeoutUnit, int seed, String libPath) {
         super(gen);
+
+        this.with_cache = with_cache;
+
         init(presolve, logging, timeout, timeoutUnit, seed, libPath);
     }
 
     private void init(boolean presolve, boolean logging, long timeout, TimeUnit timeoutUnit, int seed, String libPath) {
+
+
         if (libPath != null)
             LibraryUtil.loadLibraryFromPath(libPath);
 
         try {
             env = new GRBEnv();
             model = new GRBModel(env);
-            setLogging(logging, env);
+
+            setLogging(logging);
 
             if (timeout >= 0)
                 env.set(GRB.DoubleParam.TimeLimit, timeoutUnit.toSeconds(timeout));
@@ -50,8 +58,8 @@ public class GurobiSolver extends MILPSolver {
             if (seed != -1)
                 env.set(GRB.IntParam.Seed, seed);
 
-            if (!presolve)
-                model.set(GRB.IntParam.Presolve, 0);
+            setPresolve(presolve);
+
 
         } catch (GRBException e) {
             e.printStackTrace();
@@ -60,12 +68,25 @@ public class GurobiSolver extends MILPSolver {
         }
     }
 
-    private void setLogging(boolean isLogging, GRBEnv env) throws GRBException {
+    public void setPresolve(boolean presolve) {
+        checkIsDisposed();
+        try {
+            if (presolve)
+                model.set(GRB.IntParam.Presolve, 1);
+            else
+                model.set(GRB.IntParam.Presolve, 0);
+        } catch (GRBException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private void setLogging(boolean isLogging) throws GRBException {
         if (!isLogging) {
-            env.set(GRB.IntParam.LogToConsole, 0);
-            env.set(GRB.StringParam.LogFile, "");
+            model.set(GRB.IntParam.LogToConsole, 0);
+            model.set(GRB.StringParam.LogFile, "");
         } else {
-            env.set(GRB.IntParam.LogToConsole, 1);
+            model.set(GRB.IntParam.LogToConsole, 1);
         }
     }
 
@@ -98,12 +119,18 @@ public class GurobiSolver extends MILPSolver {
             if (type == LinearConstr.Type.SOS) {
                 GRBVar[] grbVars = Arrays.stream(vars)
                         .map(it -> retrieveVar(it.getName())).toArray(GRBVar[]::new);
-                GRBSOS sosCstr = model.addSOS(grbVars, params, GRB.SOS_TYPE1);
 
-                // add sos constraint so that we can remove it later by id
-                addedSos.put(name, sosCstr);
+                try {
+                    GRBSOS sosCstr = model.addSOS(grbVars, params, GRB.SOS_TYPE1);
 
-                model.update();
+                    // add sos constraint so that we can remove it later by id
+                    addedSos.put(name, sosCstr);
+                } catch (NullPointerException e) {
+                    throw new ModelException("Could not add sos constraint. Make sure that all variables exist in model.");
+                }
+
+                if (!with_cache)
+                    model.update();
             } else {
                 final GRBLinExpr lhs = new GRBLinExpr();
 
@@ -124,14 +151,17 @@ public class GurobiSolver extends MILPSolver {
 
                 final double rhs = cstr.getRhs();
 
-                for (int i = 0; i < params.length; i++) {
-                    GRBVar var = retrieveVar(vars[i].getName());
+                lhs.addTerms(params, Arrays.stream(vars).map(e -> retrieveVar(e.getName())).toArray(GRBVar[]::new));
 
-                    lhs.addTerm(params[i], var);
+                try {
+                    model.addConstr(lhs, sense, rhs, name);
+                } catch (NullPointerException e) {
+                    throw new ModelException("Null Pointer in Gurobi: Make sure that variables in constraint exist in model.");
                 }
+                cstrs.add(name);
 
-                model.addConstr(lhs, sense, rhs, name);
-                model.update();
+                if (!with_cache)
+                    model.update();
             }
         } catch (GRBException e) {
             e.printStackTrace();
@@ -166,27 +196,45 @@ public class GurobiSolver extends MILPSolver {
             e.printStackTrace();
             // TODO create specific exception type
             throw new IllegalStateException("Could not add objective to Gurobi model.");
+        } catch (NullPointerException e) {
+            throw new ModelException("Could not add objective to Gurobi model. Make sure that all contained variables exist in model.");
+        }
+
+    }
+
+    @Override
+    protected void removeObj() {
+        try {
+            model.setObjective(new GRBLinExpr(), GRB.MAXIMIZE);
+        } catch (GRBException e) {
+            e.printStackTrace();
+            throw new IllegalStateException("Could not remove objective.");
         }
     }
 
     private GRBVar retrieveVar(final String varName) {
         checkIsDisposed();
 
-        try {
-            final GRBVar var = model.getVarByName(varName);
+        if (with_cache) {
+            return vars.get(varName);
+        } else {
 
-            if (var == null)
-                throw new ModelException("Could not find variable " + varName + " in model.");
+            try {
+                final GRBVar var = model.getVarByName(varName);
 
-            return var;
-        } catch (GRBException e) {
-            if (e.getErrorCode() == GRB.ERROR_DATA_NOT_AVAILABLE) {
-                return null;
+                if (var == null)
+                    throw new ModelException("Could not find variable " + varName + " in model.");
+
+                return var;
+            } catch (GRBException e) {
+                if (e.getErrorCode() == GRB.ERROR_DATA_NOT_AVAILABLE) {
+                    return null;
+                }
+
+                e.printStackTrace();
+                // TODO create specific exception type
+                throw new IllegalStateException("Could not retrieve variable with name " + varName);
             }
-
-            e.printStackTrace();
-            // TODO create specific exception type
-            throw new IllegalStateException("Could not retrieve variable with name " + varName);
         }
     }
 
@@ -197,8 +245,10 @@ public class GurobiSolver extends MILPSolver {
         if (!hasConstraint(constraint.getName()))
             throw new ModelException("Model does not contain constraint with name " + constraint.getName());
 
+
         if (addedSos.containsKey(constraint.getName())) {
             try {
+                model.update();
                 model.remove(addedSos.get(constraint.getName()));
                 addedSos.remove(constraint.getName());
             } catch (GRBException e) {
@@ -208,6 +258,7 @@ public class GurobiSolver extends MILPSolver {
         } else {
 
             try {
+                model.update();
                 GRBConstr cstr = model.getConstrByName(constraint.getName());
                 model.remove(cstr);
                 model.update();
@@ -216,6 +267,8 @@ public class GurobiSolver extends MILPSolver {
                 throw new ModelException("Could not find constraint with name " + constraint.getName());
             }
         }
+
+        cstrs.remove(constraint.getName());
     }
 
     @Override
@@ -259,6 +312,8 @@ public class GurobiSolver extends MILPSolver {
             addedSos.clear();
             env.dispose();
             model.dispose();
+            cstrs.clear();
+            vars.clear();
         } catch (GRBException e) {
             e.printStackTrace();
             // TODO create specific exception type
@@ -318,23 +373,30 @@ public class GurobiSolver extends MILPSolver {
         final double lbNew = (lb < 0) ? -GRB.INFINITY : lb;
         final double ubNew = (ub < 0) ? GRB.INFINITY : ub;
         try {
+            final GRBVar var;
             switch (type) {
                 case INT:
-                    model.addVar(lbNew, ubNew, 0.0, GRB.INTEGER, name);
+                    var = model.addVar(lbNew, ubNew, 0.0, GRB.INTEGER, name);
                     break;
                 case BIN:
-                    model.addVar(0.0, 1.0, 0.0, GRB.BINARY, name);
+                    var = model.addVar(0.0, 1.0, 0.0, GRB.BINARY, name);
                     break;
                 case DBL:
-                    model.addVar(lbNew, ubNew, 0.0, GRB.CONTINUOUS, name);
+                    var = model.addVar(lbNew, ubNew, 0.0, GRB.CONTINUOUS, name);
                     break;
+                default:
+                    throw new IllegalStateException("Unknown variable type.");
             }
-            model.update();
+            vars.put(name, var);
+
+            if (!with_cache)
+                model.update();
         } catch (GRBException e) {
             e.printStackTrace();
             // TODO create specific exception type
             throw new IllegalStateException("Could not add variable name to Gurobi model.");
         }
+
 
     }
 
@@ -352,6 +414,8 @@ public class GurobiSolver extends MILPSolver {
 
     @Override
     public int getNumConstrs() {
+        checkIsDisposed();
+
         try {
             return model.get(GRB.IntAttr.NumConstrs);
         } catch (GRBException e) {
@@ -360,20 +424,23 @@ public class GurobiSolver extends MILPSolver {
         }
     }
 
-
     @Override
     public boolean hasVar(String varName) {
         checkIsDisposed();
 
-        try {
-            return model.getVarByName(varName) != null;
-        } catch (GRBException e) {
-            if (e.getErrorCode() == GRB.ERROR_DATA_NOT_AVAILABLE)
-                return false;
+        if (with_cache) {
+            return vars.containsKey(varName);
+        } else {
+            try {
+                return model.getVarByName(varName) != null;
+            } catch (GRBException e) {
+                if (e.getErrorCode() == GRB.ERROR_DATA_NOT_AVAILABLE)
+                    return false;
 
-            e.printStackTrace();
-            // TODO create specific exception type
-            throw new IllegalStateException("Could not access Gurobi model.");
+                e.printStackTrace();
+                // TODO create specific exception type
+                throw new IllegalStateException("Could not access Gurobi model.");
+            }
         }
     }
 
@@ -385,14 +452,17 @@ public class GurobiSolver extends MILPSolver {
         if (addedSos.containsKey(cstrName))
             return true;
 
-        return Arrays.stream(model.getConstrs()).parallel().anyMatch(it -> {
-            try {
-                return it.get(GRB.StringAttr.ConstrName).equals(cstrName);
-            } catch (GRBException e) {
-                e.printStackTrace();
-                throw new IllegalStateException("Undesired state.");
-            }
-        });
+        if (with_cache)
+            return cstrs.contains(cstrName);
+        else
+            return Arrays.stream(model.getConstrs()).anyMatch(it -> {
+                try {
+                    return it.get(GRB.StringAttr.ConstrName).equals(cstrName);
+                } catch (GRBException e) {
+                    e.printStackTrace();
+                    throw new IllegalStateException("Undesired state.");
+                }
+            });
     }
 
     public static class GurobiSolverBuilder implements MILPSolverBuilder {
@@ -404,6 +474,7 @@ public class GurobiSolver extends MILPSolver {
         private TimeUnit timeoutUnit = TimeUnit.SECONDS;
         private String libPath = null;
         private int seed = -1;
+        private boolean withCache = true;
 
         public GurobiSolverBuilder withLogging(boolean logging) {
             this.logging = logging;
@@ -436,9 +507,17 @@ public class GurobiSolver extends MILPSolver {
             return this;
         }
 
+        public GurobiSolverBuilder withCache(boolean withCache) {
+            this.withCache = withCache;
+            return this;
+        }
+
         @Override
         public GurobiSolver build() {
-            return new GurobiSolver(gen, logging, presolve, timeout, timeoutUnit, seed, libPath);
+            if (gen == null)
+                gen = new SosBasedCstrGenerator();
+
+            return new GurobiSolver(gen, withCache, logging, presolve, timeout, timeoutUnit, seed, libPath);
         }
     }
 

@@ -10,6 +10,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
 import static org.cardygan.ilp.internal.util.Util.listOf;
@@ -321,6 +323,18 @@ public class ExprSimplifier {
 
         public Map<Var, Double> getCoeffs() {
             return Collections.unmodifiableMap(coeffs);
+        }
+
+        public Var[] getVars() {
+            return coeffs.keySet().toArray(new Var[0]);
+        }
+
+        public double[] getParams() {
+            return coeffs.values().stream().mapToDouble(e -> e).toArray();
+        }
+
+        public double[] getParams(ToDoubleFunction<Double> transform) {
+            return coeffs.values().stream().mapToDouble(transform).toArray();
         }
 
         public double getConstant() {

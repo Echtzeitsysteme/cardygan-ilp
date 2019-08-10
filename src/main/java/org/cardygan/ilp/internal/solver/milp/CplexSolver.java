@@ -93,14 +93,23 @@ public class CplexSolver extends MILPSolver {
             if (seed != -1)
                 solver.setParam(IloCplex.IntParam.RandomSeed, seed);
 
+            setPresolve(presolve);
 
-            solver.setParam(IloCplex.BooleanParam.PreInd, presolve);
 
         } catch (IloException ex) {
             ex.printStackTrace();
             throw new IllegalStateException("Could not initialize CPLEX backend.");
         }
     }
+
+    public void setPresolve(boolean presolve) {
+        try {
+            solver.setParam(IloCplex.BooleanParam.PreInd, presolve);
+        } catch (IloException e) {
+            throw new IllegalStateException("Could not initialize CPLEX backend.");
+        }
+    }
+
 
     @Override
     public void addCstr(String name, LinearConstr cstr) {
@@ -191,10 +200,7 @@ public class CplexSolver extends MILPSolver {
             expr.add(solver.linearNumExpr(constant));
 
             // Check if another objective is already set
-            if (solver.getObjective() != null) {
-                // Remove it before setting new one
-                solver.remove(solver.getObjective());
-            }
+            removeObj();
 
             // Check if objective is to maximize or to minimize
             if (obj.isMax()) {
@@ -208,6 +214,17 @@ public class CplexSolver extends MILPSolver {
             throw new IllegalStateException("Could not add objective to CPLEX model.");
         } catch (NullPointerException ex) {
             throw new ModelException("There was a NullPointerException thrown in the CPLEX backend!");
+        }
+    }
+
+    @Override
+    protected void removeObj() {
+        if (solver.getObjective() != null) {
+            try {
+                solver.remove(solver.getObjective());
+            } catch (IloException e) {
+                throw new ModelException("Could not remove objective.");
+            }
         }
     }
 

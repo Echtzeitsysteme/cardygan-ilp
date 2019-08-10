@@ -3,8 +3,19 @@ package org.cardygan.ilp.internal.solver.milp;
 import org.cardygan.ilp.api.Result;
 import org.cardygan.ilp.api.model.Constraint;
 import org.cardygan.ilp.api.model.Var;
+import org.gnu.glpk.*;
 
 public class GlpkSolver extends MILPSolver {
+
+    @Override
+    public void setPresolve(boolean presolve) {
+
+    }
+
+    @Override
+    protected void removeObj() {
+
+    }
 
     @Override
     public void addCstr(String name, LinearConstr cstr) {

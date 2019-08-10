@@ -13,32 +13,32 @@ import static org.cardygan.ilp.internal.solver.Solver.VarType.*;
 public class Model {
 
     private final IdGen varIdGen;
-    private final Solver problem;
+    private final Solver solver;
 
     public Model(Solver solver) {
-        this.problem = solver;
+        this.solver = solver;
         this.varIdGen = new VarIdGen(solver);
 
     }
 
     public void dispose() {
-        problem.dispose();
+        solver.dispose();
     }
 
     public boolean isDiposed() {
-        return problem.isDisposed();
+        return solver.isDisposed();
     }
 
     public Constraint[] newConstraint(BoolExpr expr) {
         Util.assertNotNull(expr);
 
-        return problem.newConstraint(this, null, expr);
+        return solver.newConstraint(this, null, expr);
     }
 
     public Constraint[] newConstraint(String name, BoolExpr expr) {
         Util.assertNotNull(name, expr);
 
-        return problem.newConstraint(this, name, expr);
+        return solver.newConstraint(this, name, expr);
     }
 
 
@@ -46,7 +46,7 @@ public class Model {
         final String varName = varIdGen.checkOrGenNewIfNull(name);
 
 
-        problem.addVar(varName, lb, ub, INT);
+        solver.addVar(varName, lb, ub, INT);
 
 
         // TODO add caching mechanism
@@ -119,7 +119,7 @@ public class Model {
 
         final String varName = varIdGen.checkOrGenNewIfNull(name);
 
-        problem.addVar(varName, -1, -1, BIN);
+        solver.addVar(varName, -1, -1, BIN);
 
         return new BinaryVar(varName);
     }
@@ -183,38 +183,51 @@ public class Model {
     private DoubleVar newDoublVarInternal(String name, double lb, double ub) {
         final String varName = varIdGen.checkOrGenNewIfNull(name);
 
-        problem.addVar(varName, lb, ub, DBL);
+        solver.addVar(varName, lb, ub, DBL);
 
         // TODO add caching mechanism
         return new DoubleVar(varName);
     }
 
     public boolean hasVar(String name) {
-        return problem.hasVar(name);
+        return solver.hasVar(name);
     }
 
 
     public double getVal(Var var) {
         // TODO check malfunction
-        return problem.getVal(var);
+        return solver.getVal(var);
     }
 
     public double getObjVal() {
         // TODO check if not yet optimized
-        return problem.getObjVal();
+        return solver.getObjVal();
     }
 
-
+    /**
+     * Creates an objective from the given {@link ArithExpr} and adds it to the model.
+     * An already existing objective is replaced.
+     *
+     * @param maximize <code>true</code> if objective should be maximized otherwise <code>false</code>
+     * @param expr     the expression which is set as an objective for the model. Objective is removed from the model
+     *                 if parameter is null.
+     */
     public void newObjective(boolean maximize, ArithExpr expr) {
-        problem.newObjective(maximize, expr);
+        solver.newObjective(maximize, expr);
     }
 
+    /**
+     * Removes the given constraint from the model.
+     *
+     * @param cstr the constraint to be removed from the model
+     * @throws org.cardygan.ilp.internal.util.ModelException if given constraint does not exist in the model
+     */
     public void removeConstraint(Constraint cstr) {
-        problem.removeConstr(cstr);
+        solver.removeConstr(cstr);
     }
 
     public Result optimize() {
-        return problem.optimize();
+        return solver.optimize();
     }
 
     /**
@@ -223,7 +236,7 @@ public class Model {
      * @return the number of variables
      */
     public int getNumVars() {
-        return problem.getNumVars();
+        return solver.getNumVars();
     }
 
     /**
@@ -232,6 +245,10 @@ public class Model {
      * @return the number of constraints
      */
     public int getNumConstrs() {
-        return problem.getNumConstrs();
+        return solver.getNumConstrs();
+    }
+
+    public Solver getSolver() {
+        return solver;
     }
 }
